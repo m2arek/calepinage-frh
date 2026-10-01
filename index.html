@@ -235,7 +235,7 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
           </div>
           <div class="field" id="pTiltWrap" hidden><label for="pTilt">Toit plat : inclinaison des supports (°)</label><input type="number" id="pTilt" min="0" max="35" step="1"></div>
           <div class="field" id="pPoseWrap"><label for="pPose">Pose des modules</label>
-            <select id="pPose"><option value="portrait">Portrait</option><option value="paysage">Paysage</option></select></div>
+            <select id="pPose"><option value="auto">Automatique (le plus de modules)</option><option value="portrait">Portrait imposé</option><option value="paysage">Paysage imposé</option></select></div>
           <p class="readout" id="pRead"></p>
           <p class="readout" id="pJoins"></p>
           <button type="button" class="btn acc" id="pAlign" hidden>Aligner la hauteur sur les pans voisins</button>
@@ -471,10 +471,14 @@ function layoutFlat(pan){const m=S.mpp;const poly=pan.pts.map(p=>({x:p.x*m,y:p.y
 function layoutPan(pan){
   if(!S.mpp||pan.pts.length<3)return{panels:[],area:0};
   if(isFlat(pan))return layoutFlat(pan);
+  /* pose automatique : on essaie portrait et paysage, on garde celle qui loge le plus de modules (portrait si égalité) */
+  if(pan.pose!=='portrait'&&pan.pose!=='paysage'){const a=layoutSloped(pan,'portrait'),b=layoutSloped(pan,'paysage');const r=b.panels.length>a.panels.length?b:a;r.auto=true;return r;}
+  return layoutSloped(pan,pan.pose);}
+function layoutSloped(pan,pose){
   const F=frame(pan);const poly=F.P.map(F.toUV);const area=Math.abs(areaSigned(poly));
   const mo=S.mod,W=mo.w/1000,H=mo.h/1000,g=Math.max(0,mo.gap)/100,mg=Math.max(0,mo.margin)/100;
   if(!(W>0.2&&H>0.2))return{panels:[],area};
-  const du=pan.pose==='paysage'?H:W,dv=pan.pose==='paysage'?W:H;
+  const du=pose==='paysage'?H:W,dv=pose==='paysage'?W:H;
   const obs=S.obstacles.map(o=>o.pts.map(p=>F.toUV({x:p.x*S.mpp,y:p.y*S.mpp})));
   let umin=Infinity,umax=-Infinity,vmin=Infinity,vmax=-Infinity;poly.forEach(p=>{umin=Math.min(umin,p.x);umax=Math.max(umax,p.x);vmin=Math.min(vmin,p.y);vmax=Math.max(vmax,p.y);});
   let best=[];
@@ -490,10 +494,11 @@ function layoutPan(pan){
       }
     if(res.length>best.length)best=res;
   }
-  const panels=best.map(({u,v})=>{const key=u.toFixed(2)+':'+v.toFixed(2);
+  const panels=best.map(({u,v})=>{const key=pose[0]+u.toFixed(2)+':'+v.toFixed(2);
     return{key,u,v,off:isOff(pan,key),plan:[{x:u,y:v},{x:u+du,y:v},{x:u+du,y:v+dv},{x:u,y:v+dv}].map(F.fromUV)};});
-  return{panels,area};
+  return{panels,area,pose};
 }
+const poseLabel=p=>{if(isFlat(p))return'paysage sur supports';const L=S.layouts[p.id];const ps=(L&&L.pose)||p.pose;return (p.pose==='portrait'||p.pose==='paysage')?ps:`${ps} (auto)`;};
 /* raccords entre pans : un sommet posé sur le contour d'un autre pan doit avoir la même hauteur */
 function onBoundary(pt,q,tol){return q.pts.some((c,j)=>distPtSeg(pt,c,q.pts[(j+1)%q.pts.length]).d<tol);}
 function heightAtPx(p,pt){const F=frame(p);return F.height({x:pt.x*S.mpp,y:pt.y*S.mpp});}
@@ -514,7 +519,7 @@ function snapshot(){hist.push(JSON.stringify({pans:S.pans,obstacles:S.obstacles,
 function undo(){const s=hist.pop();if(!s){toast('Rien à annuler');return;}const o=JSON.parse(s);S.pans=o.pans;S.obstacles=o.obstacles;S.calib=o.calib;S.mpp=o.mpp;if(o.forced)S.forced=o.forced;renderForced();
   if(S.sel&&!selItem())S.sel=null;S.draft=[];changed();renderEditor();renderCalib();}
 let saveT=null;
-function save(){clearTimeout(saveT);saveT=setTimeout(()=>{const base={v:1,isExample:S.isExample,pans:S.pans,obstacles:S.obstacles,calib:S.calib,mpp:S.mpp,mod:S.mod,modV2:true,modV3:true,seq:S.seq,colorIdx:S.colorIdx,roofMode:S.roofMode,forced:S.forced,capture:S.capture||null};
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{const base={v:1,isExample:S.isExample,pans:S.pans,obstacles:S.obstacles,calib:S.calib,mpp:S.mpp,mod:S.mod,modV2:true,modV3:true,seq:S.seq,colorIdx:S.colorIdx,roofMode:S.roofMode,poseAuto:true,forced:S.forced,capture:S.capture||null};
   try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:S.isExample?null:S.imgURL},base)));}catch(e){try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:null,imgLost:true},base)));}catch(_){}}},400);}
 function changed(){recalc();if(typeof renderPvStatus==='function'&&$('pvStatus'))renderPvStatus();if(typeof renderForced==='function'&&$('fOn'))try{renderForced();}catch(e){}renderList();renderSummary();renderReadout();draw();T3.dirty=true;if(S.view3d)show3d();save();}
 function selItem(){if(!S.sel)return null;return S.sel.type==='pan'?S.pans.find(p=>p.id===S.sel.id):S.obstacles.find(o=>o.id===S.sel.id);}
@@ -669,7 +674,7 @@ function finishDraft(){const pts=dedupe(S.draft);S.draft=[];S.hover=null;updateD
   if(pts.length<3){draw();toast('Il faut au moins 3 points.');return;}
   snapshot();
   if(S.mode==='obstacle'){const o={id:'o'+(S.seq++),pts,kind:S.obsKind||'velux'};S.obstacles.push(o);S.sel={type:'obs',id:o.id};S.lastObsAt=Date.now();}
-  else{const last=S.pans[S.pans.length-1];const p={id:'p'+(S.seq++),name:'Pan '+(S.pans.length+1),pts,slope:last?last.slope:35,eaveH:last?last.eaveH:5,pose:'portrait',off:[],color:S.colorIdx++};
+  else{const last=S.pans[S.pans.length-1];const p={id:'p'+(S.seq++),name:'Pan '+(S.pans.length+1),pts,slope:last?last.slope:35,eaveH:last?last.eaveH:5,pose:'auto',off:[],color:S.colorIdx++};
     p.eave=defaultEave(pts);S.pans.push(p);S.sel={type:'pan',id:p.id};}
   changed();renderEditor();setHint();}
 
@@ -732,14 +737,14 @@ function renderList(){const box=$('panList');
   const n=S.obstacles.length;$('obsInfo').textContent=n?`${n} obstacle${n>1?'s':''} (cliquez-en un sur le plan pour le modifier).`:'';}
 $('panList').addEventListener('click',e=>{const b=e.target.closest('.panrow');if(b){if(S.view3d)show2d();select('pan',b.dataset.id);}});
 function renderEditor(){const it=selItem();const isPan=it&&S.sel.type==='pan';$('panEditor').hidden=!isPan;$('obsEditor').hidden=!(it&&S.sel.type==='obs');
-  if(isPan){$('pPoseWrap').querySelector('label').textContent=S.forced.on?'Pose des modules (choisie automatiquement à la pose)':'Pose des modules';$('pName').value=it.name;$('pSlope').value=it.slope;$('pTilt').value=it.tilt??10;$('pEaveH').value=it.eaveH;$('pPose').value=it.pose;renderReadout();}
+  if(isPan){$('pPoseWrap').querySelector('label').textContent='Pose des modules';$('pName').value=it.name;$('pSlope').value=it.slope;$('pTilt').value=it.tilt??10;$('pEaveH').value=it.eaveH;$('pPose').value=(it.pose==='portrait'||it.pose==='paysage')?it.pose:'auto';renderReadout();}
   if(it&&S.sel.type==='obs')$('oKind').value=it.kind;}
 function renderReadout(){const it=selItem();if(!it||S.sel.type!=='pan')return;const o=orientOf(it);const L=S.layouts[it.id];const n=activeCount(it);
   const fl=isFlat(it);$('pTiltWrap').hidden=!fl;$('pPoseWrap').hidden=fl;
   if(fl){$('pRead').innerHTML=`<b>Toit plat</b> (pente ≤ 5°) : modules en <b>paysage</b>, inclinés à <b>${nf(it.tilt??10)}°</b>, <b>${equatorName()}</b>.`+
     (S.mpp&&L?`<br>Espace entre rangées : <b>${nf(L.gapRow*100)} cm</b> (pas de ${nf(L.pitch,2)} m), sans ombre le ${south()?'21 juin':'21 déc.'} ${S.mod.shade==='noon'?'à midi':'de 10 h à 14 h'}.<br>Surface : <b>${nf(L.area,1)} m²</b> · <b>${n} modules</b> = <b>${nf(n*S.mod.wp/1000,2)} kWc</b>`:'');}
   const orientTxt=it.slope>0?`${o.name} · ${nf(o.az)}° (azimut ${o.az-180>0?'+':''}${nf(o.az-180)}°)`:'Toit plat';
-  if(!fl)$('pRead').innerHTML=`Orientation : <b>${orientTxt}</b><br>Pente : <b>${nf(it.slope)}° soit ${nf(Math.tan(it.slope*Math.PI/180)*100)} %</b>`+
+  if(!fl)$('pRead').innerHTML=`Orientation : <b>${orientTxt}</b><br>Pente : <b>${nf(it.slope)}° soit ${nf(Math.tan(it.slope*Math.PI/180)*100)} %</b>`+(S.mpp?`<br>Pose retenue : <b>${poseLabel(it)}</b>`:'')+
     (S.mpp?`<br>Surface réelle : <b>${nf(L?L.area:0,1)} m²</b> · <b>${n} modules</b> = <b>${nf(n*S.mod.wp/1000,2)} kWc</b>`:'');
   if(S.mpp&&n){const pp=panProd(it);$('pRead').innerHTML+=`<br>Production estimée : <b>${nf(Math.round(pp.year/10)*10)} kWh/an</b> (${nf(pp.spec)} kWh/kWc, ${pp.src==='pvgis'?'PVGIS':pp.src==='pending'?'PVGIS en cours…':'calcul interne'})`;}
   const J=panJoins(it),jb=$('pJoins');
@@ -799,9 +804,7 @@ async function placeForced(){if(!S.mpp){toast('Définissez d\'abord l\'échelle.
   const target=parseFloat(String($('fTarget').value).replace(',','.'));if(!(target>0)){toast('Saisissez une puissance en kWc.');return;}
   snapshot();S.forced.target=target;S.pans.forEach(p=>p.on=[]);
   /* pose choisie automatiquement : sur chaque pan incliné, l'orientation des modules qui en loge le plus */
-  S.pans.forEach(p=>{if(p.pts.length<3||isFlat(p))return;const keep=p.pose;
-    p.pose='portrait';const nP=layoutPan(p).panels.length;p.pose='paysage';const nL=layoutPan(p).panels.length;
-    p.pose=nL>nP?'paysage':nP>nL?'portrait':keep;});
+  S.pans.forEach(p=>{if(p.pts.length>=3&&!isFlat(p))p.pose='auto';});
   recalc();
   const wp=S.mod.wp,N=Math.max(1,Math.floor(target*1000/wp+1e-9));
   const ranked=S.pans.map(p=>({p,spec:panSpec(p),L:S.layouts[p.id]})).filter(x=>x.L&&x.L.panels.length).sort((a,b)=>b.spec-a.spec);
@@ -820,7 +823,7 @@ function renderForced(){const f=S.forced;$('fOn').checked=!!f.on;$('fBox').hidde
   let cap=0;S.pans.forEach(p=>{const L=S.layouts[p.id];if(L)cap+=L.panels.length;});
   const ranked=S.pans.filter(p=>p.pts.length>=3).map(p=>({p,spec:panSpec(p)})).sort((a,b)=>b.spec-a.spec);
   let h=`${N} modules de ${nf(wp)} Wc = <b>${nf(N*wp/1000,2)} kWc</b>`+(N*wp/1000<t-1e-9?` (arrondi en dessous de ${nf(t,2)} kWc)`:'')+`<br>Capacité maximale de la toiture : ${cap} modules = ${nf(cap*wp/1000,2)} kWc`;
-  if(ranked.length&&S.mpp)h+='<br>Ordre de remplissage : '+ranked.map(x=>`${esc(x.p.name)} (${nf(x.spec)} kWh/kWc, ${isFlat(x.p)?'paysage sur supports':x.p.pose})`).join(' › ')+(f.placed?'':'<br>La pose portrait ou paysage de chaque pan sera choisie automatiquement pour loger le plus de modules.');
+  if(ranked.length&&S.mpp)h+='<br>Ordre de remplissage : '+ranked.map(x=>`${esc(x.p.name)} (${nf(x.spec)} kWh/kWc, ${poseLabel(x.p)})`).join(' › ')+(f.placed?'':'<br>La pose portrait ou paysage de chaque pan sera choisie automatiquement pour loger le plus de modules.');
   if(f.placed){const n=totals().n;h+=`<br>Posés actuellement : <b>${n} modules = ${nf(n*wp/1000,2)} kWc</b>`;if(f.last&&n!==f.last.placed)h+=' <span class="warn">(la toiture ou la pose a changé : cliquez à nouveau « Poser les panneaux » pour recalculer)</span>';}
   else h+='<br><span class="warn">Aucun panneau posé pour l\'instant.</span>';
   $('fInfo').innerHTML=h;}
@@ -855,7 +858,7 @@ function summaryText(){const t=totals(),m=S.mod;const lines=[`Calepinage FRH –
   `Production estimée : ${nf(Math.round(S.pans.reduce((a,p)=>a+panProd(p).year,0)/10)*10)} kWh/an (${usePvgis()?'PVGIS, '+(pvCoords().gps?'point GPS '+nf(pvCoords().lat,4)+', '+nf(pvCoords().lon,4):(SITES[m.site]||SITES[4])[0])+', pertes '+nf(m.loss??14)+' %':'calcul interne, '+(SITES[m.site]||SITES[4])[0]+', irradiation '+nf(m.ghi)+' kWh/m²/an, rendement '+nf(m.pr)+' %'})`,''];
   S.pans.forEach(p=>{const o=orientOf(p),n=activeCount(p),L=S.layouts[p.id];
     if(isFlat(p)&&L){lines.push(`${p.name} : toit plat, ${nf(L.area,1)} m², ${n} modules paysage inclinés à ${nf(L.tilt)}° ${equatorName()}, rangées espacées de ${nf(L.gapRow*100)} cm = ${nf(n*m.wp/1000,2)} kWc · ${nf(Math.round(panProd(p).year/10)*10)} kWh/an`);return;}
-    lines.push(`${p.name} : ${p.slope>0?o.name+' (azimut '+(o.az-180>0?'+':'')+nf(o.az-180)+'°)':'toit plat'}, pente ${nf(p.slope)}°, ${nf(L?L.area:0,1)} m², ${n} modules ${p.pose} = ${nf(n*m.wp/1000,2)} kWc · ${nf(Math.round(panProd(p).year/10)*10)} kWh/an`);});
+    lines.push(`${p.name} : ${p.slope>0?o.name+' (azimut '+(o.az-180>0?'+':'')+nf(o.az-180)+'°)':'toit plat'}, pente ${nf(p.slope)}°, ${nf(L?L.area:0,1)} m², ${n} modules ${poseLabel(p)} = ${nf(n*m.wp/1000,2)} kWc · ${nf(Math.round(panProd(p).year/10)*10)} kWh/an`);});
   if(S.obstacles.length)lines.push('',`Obstacles : ${S.obstacles.length}`);return lines.join('\n');}
 $('copyBtn').addEventListener('click',()=>{const txt=summaryText();const ta=$('copyArea');
   const fallback=()=>{ta.hidden=false;ta.value=txt;ta.focus();ta.select();toast('Texte sélectionné : Ctrl + C pour copier');};
@@ -912,7 +915,7 @@ function makeExample(){const k=EX_K,W=42*k,H=30*k,c=document.createElement('canv
   poly(EX_OBS[1].pts);g.fillStyle='#2b3542';g.fill();g.strokeStyle='#9aa3ad';g.lineWidth=2;g.stroke();
   return c.toDataURL('image/jpeg',0.9);}
 function loadExample(){setImage(makeExample(),true,()=>{hist.length=0;S.capture=null;S.seq=1;S.colorIdx=0;
-  S.pans=EX_PANS.map(p=>({id:'p'+(S.seq++),name:p.name,pts:p.pts.map(([x,y])=>({x:x*EX_K,y:y*EX_K})),eave:p.eave,slope:p.slope,eaveH:p.eaveH,pose:'portrait',off:[],color:S.colorIdx++}));
+  S.pans=EX_PANS.map(p=>({id:'p'+(S.seq++),name:p.name,pts:p.pts.map(([x,y])=>({x:x*EX_K,y:y*EX_K})),eave:p.eave,slope:p.slope,eaveH:p.eaveH,pose:'auto',off:[],color:S.colorIdx++}));
   S.obstacles=EX_OBS.map(o=>({id:'o'+(S.seq++),pts:o.pts.map(([x,y])=>({x:x*EX_K,y:y*EX_K})),kind:o.kind}));
   S.calib={a:{x:6*EX_K,y:8*EX_K},b:{x:26*EX_K,y:8*EX_K},len:20};S.mpp=0.05;S.sel=null;
   if(S.view3d)show2d();fit();setMode('select');renderCalib();renderEditor();changed();});}
@@ -1080,7 +1083,7 @@ window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').addEventLis
 new ResizeObserver(resize).observe(stage);
 function restore(){let saved=null;try{saved=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
   if(!saved||(!saved.img&&!saved.isExample)){loadExample();return;}
-  const apply=()=>{hist.length=0;S.pans=saved.pans||[];S.obstacles=saved.obstacles||[];S.calib=saved.calib||null;S.mpp=saved.mpp||null;
+  const apply=()=>{hist.length=0;S.pans=saved.pans||[];if(!saved.poseAuto)S.pans.forEach(p=>{p.pose='auto';p.off=[];});S.obstacles=saved.obstacles||[];S.calib=saved.calib||null;S.mpp=saved.mpp||null;
     if(saved.mod&&(saved.modV2||saved.mod.preset==='custom')){Object.assign(S.mod,saved.mod);if(!saved.modV3&&S.mod.preset==='p2000'&&S.mod.wp===450)S.mod.wp=500;}else if(saved.mod){S.mod.margin=saved.mod.margin;S.mod.gap=saved.mod.gap;}if(saved.forced)S.forced=saved.forced;if(saved.capture)S.capture=saved.capture;if(saved.roofMode){S.roofMode=saved.roofMode;$('roofMode').value=saved.roofMode;}S.seq=saved.seq||50;S.colorIdx=saved.colorIdx||S.pans.length;renderModule();renderForced();fit();setMode('select');renderCalib();renderEditor();changed();};
   if(saved.img)setImage(saved.img,false,apply);else setImage(makeExample(),true,apply);}
 renderModule();renderCalib();renderList();setHint();restore();pvCheck();
