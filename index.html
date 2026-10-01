@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Calepinage FRH</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
@@ -55,6 +56,19 @@ h1{font:700 clamp(22px,3vw,30px)/1.05 var(--display);margin:5px 0 0}
 .msg3d{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--muted)}
 .dropzone{position:absolute;inset:0;background:rgba(210,122,8,.18);border:3px dashed var(--accent);display:flex;align-items:center;justify-content:center;font:700 18px var(--display);color:var(--ink);pointer-events:none}
 .btn3d{position:absolute;top:10px;left:10px;display:flex;gap:6px}
+#mapView{position:absolute;inset:0}
+#map{position:absolute;inset:0;background:var(--stage)}
+.mapbar{position:absolute;top:10px;left:56px;right:10px;z-index:1100;display:flex;flex-direction:column;gap:4px;max-width:560px}
+.mapbar .row{display:flex;gap:6px}
+.mapbar input{flex:1;min-width:0;font:inherit;padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.mapres{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.mapres button{display:block;width:100%;text-align:left;border:0;background:none;color:var(--ink);font:inherit;padding:8px 11px;cursor:pointer;border-bottom:1px solid var(--line)}
+.mapres button:hover{background:var(--bg)}
+.mapfoot{position:absolute;left:10px;right:10px;bottom:10px;z-index:1100;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:rgba(12,18,16,.84);color:#eef3f1;padding:8px 10px;border-radius:9px;font-size:12.5px}
+.mapfoot b{color:#ffc46b}
+.mapmsg{position:absolute;inset:0;z-index:1050;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;background:var(--stage);color:var(--ink)}
+.capframe{position:absolute;inset:0;pointer-events:none;z-index:1000;border:2px dashed rgba(255,212,59,.9);margin:60px 14px 62px}
+.leaflet-container{font:inherit}
 
 .side{display:flex;flex-direction:column;gap:12px;min-width:0}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -126,6 +140,7 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
       <h1>Calepinage toiture</h1>
     </div>
     <div class="tabs" role="tablist" aria-label="Vue">
+      <button type="button" id="tabMap" role="tab" aria-selected="false">Carte</button>
       <button type="button" id="tab2d" class="on" role="tab" aria-selected="true">Plan 2D</button>
       <button type="button" id="tab3d" role="tab" aria-selected="false">Vue 3D</button>
     </div>
@@ -154,6 +169,16 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
         </div>
       </div>
       <div class="stage" id="stage">
+        <div id="mapView" hidden>
+          <div id="map" aria-label="Carte IGN"></div>
+          <div class="capframe" id="capFrame"></div>
+          <div class="mapbar">
+            <div class="row"><input type="text" id="mapQ" placeholder="Adresse ou coordonnées GPS (ex. 14.6313, -61.0553)" autocomplete="off"><button type="button" class="btn acc" id="mapGo">Rechercher</button></div>
+            <div class="mapres" id="mapRes" hidden></div>
+          </div>
+          <div class="mapfoot"><span id="mapHelp">1. Cherchez l'adresse · 2. <b>Cliquez sur le bâtiment</b> · 3. Cadrez la toiture dans le pointillé · 4. Capturez</span><button type="button" class="btn acc" id="mapCapture">Capturer cette vue</button></div>
+          <div class="mapmsg" id="mapMsg" hidden></div>
+        </div>
         <canvas id="cv" aria-label="Plan de la toiture"></canvas>
         <div id="three" hidden></div>
         <div class="msg3d" id="msg3d" hidden></div>
@@ -176,9 +201,13 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
     <aside class="side">
       <section class="card">
         <h2>Capture satellite <span class="step">Étape 1</span></h2>
-        <p class="small">Vue satellite à plat, nord en haut, zoom maximal sur la maison. Glissez l'image sur le plan ou :</p>
+        <p class="small">Trouvez la maison sur la carte IGN : la capture se fait en un clic et l'échelle est réglée automatiquement.</p>
         <div class="btnrow">
-          <label class="btn acc file">Charger une capture<input type="file" id="fileIn" accept="image/*"></label>
+          <button type="button" class="btn acc" id="openMapBtn">Trouver le bâtiment sur la carte</button>
+        </div>
+        <p class="small">Ou déposez votre propre capture (vue satellite à plat, nord en haut) :</p>
+        <div class="btnrow">
+          <label class="btn file">Charger une capture<input type="file" id="fileIn" accept="image/*"></label>
           <button type="button" class="btn" id="exampleBtn">Revoir l'exemple</button>
         </div>
         <p class="small" id="imgInfo"></p>
@@ -298,6 +327,7 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
 <div class="toast" id="toast" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 (function(){
 'use strict';
@@ -483,7 +513,7 @@ function snapshot(){hist.push(JSON.stringify({pans:S.pans,obstacles:S.obstacles,
 function undo(){const s=hist.pop();if(!s){toast('Rien à annuler');return;}const o=JSON.parse(s);S.pans=o.pans;S.obstacles=o.obstacles;S.calib=o.calib;S.mpp=o.mpp;if(o.forced)S.forced=o.forced;renderForced();
   if(S.sel&&!selItem())S.sel=null;S.draft=[];changed();renderEditor();renderCalib();}
 let saveT=null;
-function save(){clearTimeout(saveT);saveT=setTimeout(()=>{const base={v:1,isExample:S.isExample,pans:S.pans,obstacles:S.obstacles,calib:S.calib,mpp:S.mpp,mod:S.mod,modV2:true,modV3:true,seq:S.seq,colorIdx:S.colorIdx,roofMode:S.roofMode,forced:S.forced};
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{const base={v:1,isExample:S.isExample,pans:S.pans,obstacles:S.obstacles,calib:S.calib,mpp:S.mpp,mod:S.mod,modV2:true,modV3:true,seq:S.seq,colorIdx:S.colorIdx,roofMode:S.roofMode,forced:S.forced,capture:S.capture||null};
   try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:S.isExample?null:S.imgURL},base)));}catch(e){try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:null,imgLost:true},base)));}catch(_){}}},400);}
 function changed(){recalc();if(typeof renderPvStatus==='function'&&$('pvStatus'))renderPvStatus();if(typeof renderForced==='function'&&$('fOn'))try{renderForced();}catch(e){}renderList();renderSummary();renderReadout();draw();T3.dirty=true;if(S.view3d)show3d();save();}
 function selItem(){if(!S.sel)return null;return S.sel.type==='pan'?S.pans.find(p=>p.id===S.sel.id):S.obstacles.find(o=>o.id===S.sel.id);}
@@ -521,7 +551,7 @@ function draw(){
   if(it&&S.mode==='select')it.pts.forEach(q=>{ctx.beginPath();ctx.arc(q.x,q.y,4.5*px,0,7);ctx.fillStyle='#fff';ctx.fill();ctx.lineWidth=1.5*px;ctx.strokeStyle='#111';ctx.stroke();});
   // calibration
   let cl=null;
-  if(S.mode==='calib'){if(S.calibDraft.length===1&&S.hover)cl=[S.calibDraft[0],S.hover];else if(S.calibDraft.length===2)cl=S.calibDraft;else if(S.calib)cl=[S.calib.a,S.calib.b];}
+  if(S.mode==='calib'){if(S.calibDraft.length===1&&S.hover)cl=[S.calibDraft[0],S.hover];else if(S.calibDraft.length===2)cl=S.calibDraft;else if(S.calib&&S.calib.a)cl=[S.calib.a,S.calib.b];}
   if(cl){ctx.setLineDash([8*px,5*px]);ctx.lineWidth=2.5*px;ctx.strokeStyle='#ffd43b';ctx.beginPath();ctx.moveTo(cl[0].x,cl[0].y);ctx.lineTo(cl[1].x,cl[1].y);ctx.stroke();ctx.setLineDash([]);
     cl.forEach(q=>{ctx.beginPath();ctx.arc(q.x,q.y,5*px,0,7);ctx.fillStyle='#ffd43b';ctx.fill();});}
   else if(S.mode==='calib'&&S.calibDraft.length===1){const q=S.calibDraft[0];ctx.beginPath();ctx.arc(q.x,q.y,5*px,0,7);ctx.fillStyle='#ffd43b';ctx.fill();}
@@ -530,6 +560,7 @@ function draw(){
     ctx.beginPath();pts.forEach((q,j)=>j?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.lineWidth=2*px;ctx.strokeStyle=col;ctx.stroke();
     if(S.draft.length>=3&&S.hover){ctx.setLineDash([4*px,4*px]);ctx.beginPath();ctx.moveTo(S.hover.x,S.hover.y);ctx.lineTo(S.draft[0].x,S.draft[0].y);ctx.stroke();ctx.setLineDash([]);}
     S.draft.forEach((q,j)=>{ctx.beginPath();ctx.arc(q.x,q.y,(j===0?6:4)*px,0,7);ctx.fillStyle=j===0?col:'#fff';ctx.fill();ctx.lineWidth=1.2*px;ctx.strokeStyle='#111';ctx.stroke();});}
+  if(S.capture&&S.capture.mx!=null&&!S.isExample){ctx.beginPath();ctx.arc(S.capture.mx,S.capture.my,6*px,0,7);ctx.lineWidth=2.5*px;ctx.strokeStyle='#fff';ctx.stroke();ctx.beginPath();ctx.arc(S.capture.mx,S.capture.my,3*px,0,7);ctx.fillStyle='#d27a08';ctx.fill();}
   ctx.restore();
   // repères en coordonnées écran
   ctx.font='600 12px Figtree, system-ui, sans-serif';ctx.textBaseline='middle';
@@ -644,7 +675,7 @@ function finishDraft(){const pts=dedupe(S.draft);S.draft=[];S.hover=null;updateD
 window.addEventListener('keydown',e=>{
   const tag=(e.target.tagName||'').toLowerCase();const typing=tag==='input'||tag==='select'||tag==='textarea';
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!typing){e.preventDefault();undo();return;}
-  if(typing||S.view3d)return;
+  if(typing||S.view3d||S.viewMap)return;
   if(e.key===' '&&tag!=='button'){spaceDown=true;e.preventDefault();return;}
   if(e.key==='Escape'){if(S.draft.length||S.calibDraft.length){S.draft=[];S.calibDraft=[];$('calibForm').hidden=true;updateDraftButtons();}
     else if(S.sub)S.sub=null;else if(S.mode!=='select')setMode('select');else select(null);draw();setHint();return;}
@@ -663,7 +694,7 @@ const HINTS={
   calib:'Cliquez les <b>deux extrémités</b> d\'une longueur connue (idéalement un long côté du toit), puis saisissez sa valeur dans le panneau « Échelle ».',
   eave:'Cliquez le <b>bord bas</b> (égout, côté gouttière) du pan sélectionné. La flèche indique le sens de la pente.'
 };
-function setHint(){let h;if(S.view3d)h='<b>Glisser</b> : tourner · <b>Clic droit</b> ou <b>Maj + glisser</b> : déplacer · <b>Molette</b> ou pincer : zoomer';
+function setHint(){let h;if(S.viewMap){$('hint').hidden=true;return;}$('hint').hidden=false;if(S.view3d)h='<b>Glisser</b> : tourner · <b>Clic droit</b> ou <b>Maj + glisser</b> : déplacer · <b>Molette</b> ou pincer : zoomer';
   else h=S.sub==='eave'?HINTS.eave:HINTS[S.mode];
   if(!S.view3d&&S.forced.on&&!S.forced.placed)h='<b>Puissance imposée</b> : dessinez tous les pans, puis cliquez « Poser les panneaux ». '+h;
   if(!S.view3d&&!S.mpp&&S.mode!=='calib')h='<b>Échelle non définie</b> : les panneaux apparaîtront après calibration. '+h;$('hint').innerHTML=h;}
@@ -672,7 +703,7 @@ function setMode(m){S.mode=m;S.sub=null;S.draft=[];S.hover=null;S.snap=null;if(m
   $('obsKindGroup').hidden=m!=='obstacle';renderKindBtns();
   cv.style.cursor=(m==='select'||m==='panels')?'default':'crosshair';$('measure').hidden=true;updateDraftButtons();setHint();draw();}
 function updateDraftButtons(){const d=S.draft.length>0;$('finishBtn').hidden=!(d&&S.draft.length>=3);$('cancelDraftBtn').hidden=!d;}
-document.querySelectorAll('#modes .tb').forEach(b=>b.addEventListener('click',()=>{if(S.view3d)show2d();setMode(b.dataset.mode);}));
+document.querySelectorAll('#modes .tb').forEach(b=>b.addEventListener('click',()=>{if(S.view3d||S.viewMap)show2d();setMode(b.dataset.mode);}));
 function renderKindBtns(){document.querySelectorAll('#obsKindGroup .tb').forEach(b=>b.classList.toggle('on',b.dataset.kind===(S.obsKind||'velux')));}
 document.querySelectorAll('#obsKindGroup .tb').forEach(b=>b.addEventListener('click',()=>{S.obsKind=b.dataset.kind;renderKindBtns();
   const it=selItem();if(it&&S.sel.type==='obs'&&!S.draft.length&&Date.now()-(S.lastObsAt||0)<15000){snapshot();it.kind=S.obsKind;$('oKind').value=it.kind;changed();}}));
@@ -689,7 +720,7 @@ function applyCalib(){const L=parseFloat(String($('calibLen').value).replace(','
 $('calibOk').addEventListener('click',applyCalib);
 $('calibLen').addEventListener('keydown',e=>{if(e.key==='Enter')applyCalib();});
 function renderCalib(){const s=$('calibStatus');
-  if(S.mpp)s.innerHTML=`<span class="pill ok">Calibrée</span><span>1 pixel = ${nf(S.mpp*100,1)} cm</span>`+(S.calib?`<span class="small">réf. ${nf(S.calib.len,2)} m</span>`:'');
+  if(S.mpp)s.innerHTML=`<span class="pill ok">${S.calib&&S.calib.auto?'Automatique':'Calibrée'}</span><span>1 pixel = ${nf(S.mpp*100,1)} cm</span>`+(S.calib&&S.calib.auto?`<span class="small">capture IGN, zoom ${S.calib.z}</span>`:S.calib&&S.calib.len?`<span class="small">réf. ${nf(S.calib.len,2)} m</span>`:'');
   else s.innerHTML='<span class="pill warn">À définir</span><span class="small">Choisissez « Échelle » dans la barre d\'outils.</span>';}
 
 /* ---------- panneau latéral ---------- */
@@ -838,7 +869,7 @@ function setImage(url,isEx,cb){const im=new Image();im.onload=()=>{S.img=im;S.im
 function loadFile(file){if(!file||!/^image\//.test(file.type)){toast('Choisissez une image (PNG ou JPG).');return;}
   const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,2400/Math.max(im.width,im.height));const c=document.createElement('canvas');
     c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
-    setImage(c.toDataURL('image/jpeg',0.9),false,()=>{hist.length=0;S.pans=[];S.obstacles=[];S.calib=null;S.mpp=null;S.sel=null;S.seq=1;S.colorIdx=0;
+    setImage(c.toDataURL('image/jpeg',0.9),false,()=>{hist.length=0;S.capture=null;S.pans=[];S.obstacles=[];S.calib=null;S.mpp=null;S.sel=null;S.seq=1;S.colorIdx=0;
       if(S.view3d)show2d();fit();setMode('calib');renderCalib();renderEditor();changed();toast('Étape suivante : tracez une longueur connue');});};im.src=fr.result;};fr.readAsDataURL(file);}
 $('fileIn').addEventListener('change',e=>{loadFile(e.target.files[0]);e.target.value='';});
 ['dragenter','dragover'].forEach(t=>stage.addEventListener(t,e=>{e.preventDefault();$('dropzone').hidden=false;}));
@@ -879,7 +910,7 @@ function makeExample(){const k=EX_K,W=42*k,H=30*k,c=document.createElement('canv
   poly(EX_OBS[0].pts);g.fillStyle='#8c847a';g.fill();g.fillStyle='#3a3530';g.fillRect(10.25*k,9.65*k,0.5*k,0.5*k);poly(EX_OBS[0].pts,0.4,0.5);g.fillStyle='rgba(0,0,0,.3)';g.fill();
   poly(EX_OBS[1].pts);g.fillStyle='#2b3542';g.fill();g.strokeStyle='#9aa3ad';g.lineWidth=2;g.stroke();
   return c.toDataURL('image/jpeg',0.9);}
-function loadExample(){setImage(makeExample(),true,()=>{hist.length=0;S.seq=1;S.colorIdx=0;
+function loadExample(){setImage(makeExample(),true,()=>{hist.length=0;S.capture=null;S.seq=1;S.colorIdx=0;
   S.pans=EX_PANS.map(p=>({id:'p'+(S.seq++),name:p.name,pts:p.pts.map(([x,y])=>({x:x*EX_K,y:y*EX_K})),eave:p.eave,slope:p.slope,eaveH:p.eaveH,pose:'portrait',off:[],color:S.colorIdx++}));
   S.obstacles=EX_OBS.map(o=>({id:'o'+(S.seq++),pts:o.pts.map(([x,y])=>({x:x*EX_K,y:y*EX_K})),kind:o.kind}));
   S.calib={a:{x:6*EX_K,y:8*EX_K},b:{x:26*EX_K,y:8*EX_K},len:20};S.mpp=0.05;S.sel=null;
@@ -975,14 +1006,69 @@ function build3d(){const g=T3.group;
     const og=new THREE.BufferGeometry();og.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));og.computeVertexNormals();g.add(new THREE.Mesh(og,new THREE.MeshLambertMaterial({color:col,side:THREE.DoubleSide})));});
   if(bb.x0===Infinity){bb.x0=0;bb.x1=S.imgW*m;bb.z0=0;bb.z1=S.imgH*m;}
   const first=!T3.bbox;T3.bbox=bb;if(first||T3.recenterNext){recenter3d();T3.recenterNext=false;}}
-function show3d(){S.view3d=true;$('tab3d').classList.add('on');$('tab2d').classList.remove('on');$('tab3d').setAttribute('aria-selected','true');$('tab2d').setAttribute('aria-selected','false');
+function setTabs(t){[['tabMap','map'],['tab2d','2d'],['tab3d','3d']].forEach(([id,k])=>{$(id).classList.toggle('on',k===t);$(id).setAttribute('aria-selected',String(k===t));});}
+function show3d(){hideMap();S.view3d=true;$('tab3d').classList.add('on');$('tab2d').classList.remove('on');$('tab3d').setAttribute('aria-selected','true');$('tab2d').setAttribute('aria-selected','false');
   cv.hidden=true;$('north').hidden=true;$('measure').hidden=true;$('three').hidden=false;$('btn3d').hidden=false;
   document.querySelectorAll('#modes .tb').forEach(b=>b.classList.remove('on'));$('finishBtn').hidden=true;$('cancelDraftBtn').hidden=true;setHint();
-  if(init3d()){if(T3.dirty){build3d();T3.dirty=false;}size3d();}}
-function show2d(){S.view3d=false;$('tab2d').classList.add('on');$('tab3d').classList.remove('on');$('tab2d').setAttribute('aria-selected','true');$('tab3d').setAttribute('aria-selected','false');
+  setTabs('3d');if(init3d()){if(T3.dirty){build3d();T3.dirty=false;}size3d();}}
+function show2d(){hideMap();S.view3d=false;$('tab2d').classList.add('on');$('tab3d').classList.remove('on');$('tab2d').setAttribute('aria-selected','true');$('tab3d').setAttribute('aria-selected','false');
   cv.hidden=false;$('north').hidden=false;$('three').hidden=true;$('btn3d').hidden=true;$('msg3d').hidden=true;
-  document.querySelectorAll('#modes .tb').forEach(b=>b.classList.toggle('on',b.dataset.mode===S.mode));resize();setHint();}
+  document.querySelectorAll('#modes .tb').forEach(b=>b.classList.toggle('on',b.dataset.mode===S.mode));setTabs('2d');resize();setHint();}
 $('tab3d').addEventListener('click',()=>{if(S.draft.length)finishDraft();show3d();});
+/* ---------- carte IGN (Géoplateforme) : recherche, repère du bâtiment, capture avec échelle exacte ---------- */
+const IGN_TILE='https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg';
+const MAP={m:null,marker:null,ok:0,err:0};
+function hideMap(){S.viewMap=false;$('mapView').hidden=true;}
+function showMap(){if(S.draft.length)finishDraft();S.view3d=false;S.viewMap=true;$('mapView').hidden=false;cv.hidden=true;$('three').hidden=true;$('btn3d').hidden=true;$('msg3d').hidden=true;$('north').hidden=true;$('measure').hidden=true;
+  $('finishBtn').hidden=true;$('cancelDraftBtn').hidden=true;document.querySelectorAll('#modes .tb').forEach(b=>b.classList.remove('on'));setTabs('map');setHint();
+  if(!window.L){mapMsg('La carte n\'a pas pu se charger. Vérifiez la connexion internet, ou déposez une capture avec « Charger une capture ».');return;}
+  if(!MAP.m){MAP.m=L.map('map',{maxZoom:21,zoomSnap:0.5});
+    L.tileLayer(IGN_TILE,{maxNativeZoom:19,maxZoom:21,crossOrigin:'anonymous',attribution:'Photos aériennes © IGN – Géoplateforme'})
+      .on('tileload',()=>{MAP.ok++;$('mapMsg').hidden=true;})
+      .on('tileerror',()=>{MAP.err++;if(!MAP.ok&&MAP.err>3)mapMsg('Les photos IGN ne peuvent pas s\'afficher ici. Utilisez la version hébergée de l\'outil (votre adresse Vercel), ou déposez une capture avec « Charger une capture ».');})
+      .addTo(MAP.m);
+    MAP.m.on('click',e=>setBuilding(e.latlng.lat,e.latlng.lng,false));
+    const g=S.mod.gpsLat!=null?[S.mod.gpsLat,S.mod.gpsLon]:null;
+    if(g){MAP.m.setView(g,19);placeMarker(g[0],g[1]);}else MAP.m.setView([46.6,2.4],6);}
+  setTimeout(()=>MAP.m.invalidateSize(),50);$('mapQ').focus();}
+function mapMsg(t){$('mapMsg').textContent=t;$('mapMsg').hidden=false;}
+function placeMarker(lat,lon){if(MAP.marker)MAP.marker.setLatLng([lat,lon]);else MAP.marker=L.circleMarker([lat,lon],{radius:8,color:'#fff',weight:3,fillColor:'#d27a08',fillOpacity:1}).addTo(MAP.m);}
+function setBuilding(lat,lon,center){placeMarker(lat,lon);if(center)MAP.m.setView([lat,lon],19);
+  $('mGps').value=`${lat.toFixed(6)}, ${lon.toFixed(6)}`;applyGps();
+  $('mapHelp').innerHTML=`Bâtiment repéré (${nf(lat,5)}, ${nf(lon,5)}). <b>Cadrez la toiture dans le pointillé</b>, puis capturez.`;}
+async function mapSearch(){const q=$('mapQ').value.trim();const box=$('mapRes');if(!q)return;
+  const m=q.match(/^\s*(-?\d+(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[.,]\d+)?)\s*$/);
+  if(m){const lat=parseFloat(m[1].replace(',','.')),lon=parseFloat(m[2].replace(',','.'));if(Math.abs(lat)<=85&&Math.abs(lon)<=180){box.hidden=true;setBuilding(lat,lon,true);return;}}
+  box.hidden=false;box.innerHTML='<button type="button" disabled>Recherche…</button>';
+  try{const r=await fetch('https://data.geopf.fr/geocodage/search?limit=6&q='+encodeURIComponent(q));const j=await r.json();const f=(j.features||[]);
+    if(!f.length){box.innerHTML='<button type="button" disabled>Aucune adresse trouvée. Essayez avec le code postal, ou collez des coordonnées GPS.</button>';return;}
+    box.innerHTML=f.map((x,i)=>`<button type="button" data-i="${i}">${esc(x.properties.label)}<span class="small"> · ${esc(x.properties.context||'')}</span></button>`).join('');
+    box.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{const g=f[+b.dataset.i].geometry.coordinates;box.hidden=true;$('mapQ').value=f[+b.dataset.i].properties.label;
+      MAP.m.setView([g[1],g[0]],19);placeMarker(g[1],g[0]);$('mapHelp').innerHTML='Adresse trouvée. <b>Cliquez exactement sur le bâtiment</b> pour placer le repère, puis capturez.';}));}
+  catch(e){box.innerHTML='<button type="button" disabled>Recherche d\'adresse indisponible. Collez plutôt des coordonnées GPS.</button>';}}
+$('mapGo').addEventListener('click',mapSearch);
+$('mapQ').addEventListener('keydown',e=>{if(e.key==='Enter')mapSearch();});
+function loadTile(url){return new Promise(res=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>res(im);im.onerror=()=>res(null);im.src=url;});}
+async function captureMap(){if(!MAP.m)return;if(S.mod.gpsLat==null){toast('Cliquez d\'abord sur le bâtiment pour le repérer.');return;}
+  const btn=$('mapCapture');btn.disabled=true;btn.textContent='Capture en cours…';
+  try{const size=MAP.m.getSize(),fr={l:14,t:60,r:14,b:62};
+    const nwC=MAP.m.containerPointToLatLng([fr.l,fr.t]),seC=MAP.m.containerPointToLatLng([size.x-fr.r,size.y-fr.b]);
+    let z=19,nw,se;for(;z>=14;z--){nw=MAP.m.project(nwC,z);se=MAP.m.project(seC,z);if((se.x-nw.x)<=3200&&(se.y-nw.y)<=3200)break;}
+    const W=Math.round(se.x-nw.x),H=Math.round(se.y-nw.y);if(W<50||H<50){toast('Zone trop petite');return;}
+    const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');g.fillStyle='#777';g.fillRect(0,0,W,H);
+    const x0=Math.floor(nw.x/256),x1=Math.floor((se.x-1)/256),y0=Math.floor(nw.y/256),y1=Math.floor((se.y-1)/256);const jobs=[];
+    for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++)jobs.push(loadTile(IGN_TILE.replace('{z}',z).replace('{x}',x).replace('{y}',y)).then(im=>{if(im)g.drawImage(im,Math.round(x*256-nw.x),Math.round(y*256-nw.y));return !!im;}));
+    const got=await Promise.all(jobs);if(!got.some(Boolean)){toast('Impossible de récupérer les photos IGN.');return;}
+    let url;try{url=c.toDataURL('image/jpeg',0.92);}catch(e){toast('Le navigateur a bloqué la capture.');return;}
+    const lat=MAP.m.unproject([(nw.x+se.x)/2,(nw.y+se.y)/2],z).lat;const mpp=156543.03392*Math.cos(lat*Math.PI/180)/Math.pow(2,z);
+    const gl=S.mod.gpsLat,gn=S.mod.gpsLon,mk=MAP.m.project([gl,gn],z);
+    setImage(url,false,()=>{hist.length=0;S.pans=[];S.obstacles=[];S.sel=null;S.seq=1;S.colorIdx=0;S.forced.placed=false;
+      S.mpp=mpp;S.calib={auto:true,z,lat};S.capture={src:'IGN',z,lat:gl,lon:gn,mx:mk.x-nw.x,my:mk.y-nw.y};
+      $('imgInfo').innerHTML=`Capture IGN · ${W} × ${H} px · zoom ${z} · repère ${nf(gl,5)}, ${nf(gn,5)}<br><span class="small">Photos aériennes © IGN – Géoplateforme</span>`;
+      show2d();fit();setMode('pan');renderCalib();renderEditor();changed();toast('Capture prête, échelle réglée : tracez les pans');});}
+  finally{btn.disabled=false;btn.textContent='Capturer cette vue';}}
+$('mapCapture').addEventListener('click',captureMap);
+$('tabMap').addEventListener('click',showMap);$('openMapBtn').addEventListener('click',showMap);
 $('tab2d').addEventListener('click',show2d);
 $('recenter3d').addEventListener('click',recenter3d);
 $('roofMode').addEventListener('change',()=>{S.roofMode=$('roofMode').value;T3.dirty=true;show3d();save();});
@@ -994,7 +1080,7 @@ new ResizeObserver(resize).observe(stage);
 function restore(){let saved=null;try{saved=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
   if(!saved||(!saved.img&&!saved.isExample)){loadExample();return;}
   const apply=()=>{hist.length=0;S.pans=saved.pans||[];S.obstacles=saved.obstacles||[];S.calib=saved.calib||null;S.mpp=saved.mpp||null;
-    if(saved.mod&&(saved.modV2||saved.mod.preset==='custom')){Object.assign(S.mod,saved.mod);if(!saved.modV3&&S.mod.preset==='p2000'&&S.mod.wp===450)S.mod.wp=500;}else if(saved.mod){S.mod.margin=saved.mod.margin;S.mod.gap=saved.mod.gap;}if(saved.forced)S.forced=saved.forced;if(saved.roofMode){S.roofMode=saved.roofMode;$('roofMode').value=saved.roofMode;}S.seq=saved.seq||50;S.colorIdx=saved.colorIdx||S.pans.length;renderModule();renderForced();fit();setMode('select');renderCalib();renderEditor();changed();};
+    if(saved.mod&&(saved.modV2||saved.mod.preset==='custom')){Object.assign(S.mod,saved.mod);if(!saved.modV3&&S.mod.preset==='p2000'&&S.mod.wp===450)S.mod.wp=500;}else if(saved.mod){S.mod.margin=saved.mod.margin;S.mod.gap=saved.mod.gap;}if(saved.forced)S.forced=saved.forced;if(saved.capture)S.capture=saved.capture;if(saved.roofMode){S.roofMode=saved.roofMode;$('roofMode').value=saved.roofMode;}S.seq=saved.seq||50;S.colorIdx=saved.colorIdx||S.pans.length;renderModule();renderForced();fit();setMode('select');renderCalib();renderEditor();changed();};
   if(saved.img)setImage(saved.img,false,apply);else setImage(makeExample(),true,apply);}
 renderModule();renderCalib();renderList();setHint();restore();pvCheck();
 })();
