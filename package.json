@@ -1,0 +1,8 @@
+{
+  "name": "calepinage-frh",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Outil de calepinage photovoltaïque FRH avec production PVGIS",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}

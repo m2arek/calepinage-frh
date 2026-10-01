@@ -1,0 +1,1003 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calepinage FRH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout : plan de travail (capture + dessin / 3D) à gauche, panneau de réglages à droite ; empilés sur mobile */
+:root{
+  --bg:#eef1f0; --surface:#ffffff; --ink:#16211e; --muted:#5d6b67; --line:#d6dfdb;
+  --accent:#d27a08; --accent-soft:#fbecd6; --on-accent:#ffffff; --stage:#dce3e0; --danger:#b8392a; --ok:#1f7a55;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"Figtree","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1513; --surface:#16201d; --ink:#e6eeeb; --muted:#98a8a3; --line:#2a3834;
+  --accent:#f0a33b; --accent-soft:#35280f; --on-accent:#1b1305; --stage:#0a100e; --danger:#f0806e; --ok:#4cc58f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1513; --surface:#16201d; --ink:#e6eeeb; --muted:#98a8a3; --line:#2a3834;
+  --accent:#f0a33b; --accent-soft:#35280f; --on-accent:#1b1305; --stage:#0a100e; --danger:#f0806e; --ok:#4cc58f; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45;padding-inline:16px;padding-block:16px 32px}
+.app{max-width:1500px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.brand{font:700 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1{font:700 clamp(22px,3vw,30px)/1.05 var(--display);margin:5px 0 0}
+.tabs{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.tabs button{font:600 13px var(--body);border:0;background:none;color:var(--muted);padding:7px 14px;border-radius:7px;cursor:pointer}
+.tabs button.on{background:var(--ink);color:var(--bg)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}
+@media (max-width:980px){.layout{grid-template-columns:minmax(0,1fr)}}
+.work{display:flex;flex-direction:column;gap:8px;min-width:0;position:sticky;top:env(safe-area-inset-top,0px)}
+@media (max-width:980px){.work{position:static}}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between}
+.group{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px}
+.tb{font:600 13px var(--body);border:0;background:none;color:var(--ink);padding:7px 11px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.tb:hover{background:var(--bg)}
+.tb.on{background:var(--accent);color:var(--on-accent)}
+.tb.primary{background:var(--ok);color:#fff}
+.tb:disabled{opacity:.4;cursor:default}
+.stage{position:relative;height:min(76vh,820px);min-height:420px;background:var(--stage);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+@media (max-width:980px){.stage{height:64vh;min-height:360px}}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#three{position:absolute;inset:0}
+#three canvas{display:block;touch-action:none}
+.hint{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(12,18,16,.82);color:#eef3f1;font-size:12.5px;padding:7px 11px;border-radius:8px;pointer-events:none;max-width:720px}
+.hint b{color:#ffc46b}
+.north{position:absolute;top:10px;right:10px;width:38px;height:46px;background:rgba(12,18,16,.72);color:#fff;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:700 12px var(--body);pointer-events:none;gap:1px}
+.measure{position:absolute;background:#111;color:#ffd08a;font:600 12px var(--body);padding:3px 7px;border-radius:6px;pointer-events:none;font-variant-numeric:tabular-nums;white-space:nowrap}
+.msg3d{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--muted)}
+.dropzone{position:absolute;inset:0;background:rgba(210,122,8,.18);border:3px dashed var(--accent);display:flex;align-items:center;justify-content:center;font:700 18px var(--display);color:var(--ink);pointer-events:none}
+.btn3d{position:absolute;top:10px;left:10px;display:flex;gap:6px}
+
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card h2{font:700 15px/1.2 var(--display);margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.step{font:700 10.5px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.small{font-size:12.5px;color:var(--muted);margin:0}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-weight:600;font-size:12.5px}
+input[type=number],input[type=text],select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:7px 9px;width:100%;min-width:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.btn{font:600 13px var(--body);border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:7px 11px;border-radius:7px;cursor:pointer;text-align:center}
+.btn:hover{border-color:var(--accent)}
+.btn.acc{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.danger{color:var(--danger)}
+.btnrow{display:flex;flex-wrap:wrap;gap:6px}
+button:focus-visible,input:focus-visible,select:focus-visible,label.btn:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.file input{position:absolute;opacity:0;width:1px;height:1px}
+.status{display:flex;align-items:center;gap:8px;font-weight:600;font-variant-numeric:tabular-nums}
+.pill{font:700 11px var(--body);padding:3px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.pill.ok{background:transparent;border:1px solid var(--ok);color:var(--ok)}
+.pill.warn{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+.panlist{display:flex;flex-direction:column;gap:4px}
+.panrow{display:grid;grid-template-columns:12px minmax(0,1fr) auto auto;gap:8px;align-items:center;text-align:left;font:500 13px var(--body);color:var(--ink);background:none;border:1px solid transparent;border-radius:8px;padding:7px 8px;cursor:pointer;font-variant-numeric:tabular-nums}
+.panrow:hover{background:var(--bg)}
+.panrow.on{background:var(--accent-soft);border-color:var(--accent)}
+.sw{width:12px;height:12px;border-radius:3px}
+.pn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.pm{color:var(--muted);font-size:12px}
+.pc{font-weight:700}
+.editor{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:9px}
+.readout{font-size:12.5px;color:var(--muted);margin:0;font-variant-numeric:tabular-nums}
+.readout b{color:var(--ink)}
+.readout .warn{color:var(--danger);font-weight:600}
+.readout .okc{color:var(--ok);font-weight:600}
+.pc.bad{color:var(--danger)}
+.totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 8px}
+.chartwrap{position:relative;display:flex;flex-direction:column;gap:4px;margin-top:4px}
+#prodChart svg{width:100%;height:auto;display:block}
+#prodChart .gl{stroke:var(--line);stroke-width:1}
+#prodChart .ax{font:9px var(--body);fill:var(--muted)}
+#prodChart .bar{fill:var(--accent)}
+#prodChart .bar.hov{opacity:.75}
+#prodChart .hit{fill:transparent;cursor:default}
+.ptip{position:absolute;background:var(--ink);color:var(--bg);font:600 12px var(--body);padding:4px 8px;border-radius:6px;pointer-events:none;white-space:nowrap;transform:translate(-50%,-100%);font-variant-numeric:tabular-nums}
+.ptab{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;margin-top:8px}
+.ptab th{font-weight:600;color:var(--muted);text-align:right;padding:4px 4px;border-bottom:1px solid var(--line)}
+.ptab th:first-child,.ptab td:first-child{text-align:left}
+.ptab td{padding:4px 4px;text-align:right;border-bottom:1px solid var(--line)}
+.ptab tr.sumrow td{font-weight:700;border-bottom:0}
+.small a{color:var(--accent)}
+.switch{display:flex;gap:9px;align-items:flex-start;font-weight:600;font-size:13px;cursor:pointer}
+.switch input{width:18px;height:18px;accent-color:var(--accent);margin:1px 0 0;flex:none}
+.tot{display:flex;flex-direction:column;gap:2px}
+.tot .k{font-size:11.5px;color:var(--muted)}
+.tot .v{font:700 22px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.tot.main .v{color:var(--accent)}
+.empty{font-size:12.5px;color:var(--muted);margin:0;padding:6px 2px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:9px;font-weight:600;font-size:13px;z-index:9;max-width:calc(100% - 32px)}
+textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:8px}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="top">
+    <div>
+      <div class="brand">FRH · Photovoltaïque</div>
+      <h1>Calepinage toiture</h1>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Vue">
+      <button type="button" id="tab2d" class="on" role="tab" aria-selected="true">Plan 2D</button>
+      <button type="button" id="tab3d" role="tab" aria-selected="false">Vue 3D</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main class="work">
+      <div class="toolbar" id="toolbar">
+        <div class="group" id="modes">
+          <button type="button" class="tb on" data-mode="select">Sélection</button>
+          <button type="button" class="tb" data-mode="pan">Tracer un pan</button>
+          <button type="button" class="tb" data-mode="obstacle">Obstacle</button>
+          <button type="button" class="tb" data-mode="panels">Retirer des panneaux</button>
+          <button type="button" class="tb" data-mode="calib">Échelle</button>
+        </div>
+        <div class="group" id="obsKindGroup" hidden>
+          <button type="button" class="tb" data-kind="velux">Fenêtre de toit</button>
+          <button type="button" class="tb" data-kind="chem">Cheminée</button>
+          <button type="button" class="tb" data-kind="autre">Autre</button>
+        </div>
+        <div class="group">
+          <button type="button" class="tb primary" id="finishBtn" hidden>Fermer le tracé</button>
+          <button type="button" class="tb" id="cancelDraftBtn" hidden>Annuler le tracé</button>
+          <button type="button" class="tb" id="undoBtn" title="Ctrl + Z">Annuler</button>
+          <button type="button" class="tb" id="fitBtn">Ajuster</button>
+        </div>
+      </div>
+      <div class="stage" id="stage">
+        <canvas id="cv" aria-label="Plan de la toiture"></canvas>
+        <div id="three" hidden></div>
+        <div class="msg3d" id="msg3d" hidden></div>
+        <div class="btn3d" id="btn3d" hidden>
+          <button type="button" class="btn" id="recenter3d">Recentrer</button>
+          <button type="button" class="btn" id="top3d">Vue de dessus</button>
+          <select id="roofMode" aria-label="Rendu du toit" style="width:auto">
+            <option value="photo">Toit : photo de la capture</option>
+            <option value="moyenne">Toit : couleur de la capture</option>
+            <option value="uni">Toit : tuile standard</option>
+          </select>
+        </div>
+        <div class="north" id="north" title="Nord supposé en haut de la capture"><span>▲</span><span>N</span></div>
+        <div class="measure" id="measure" hidden></div>
+        <div class="dropzone" id="dropzone" hidden>Déposez la capture ici</div>
+        <div class="hint" id="hint"></div>
+      </div>
+    </main>
+
+    <aside class="side">
+      <section class="card">
+        <h2>Capture satellite <span class="step">Étape 1</span></h2>
+        <p class="small">Vue satellite à plat, nord en haut, zoom maximal sur la maison. Glissez l'image sur le plan ou :</p>
+        <div class="btnrow">
+          <label class="btn acc file">Charger une capture<input type="file" id="fileIn" accept="image/*"></label>
+          <button type="button" class="btn" id="exampleBtn">Revoir l'exemple</button>
+        </div>
+        <p class="small" id="imgInfo"></p>
+      </section>
+
+      <section class="card">
+        <h2>Échelle <span class="step">Étape 2</span></h2>
+        <div class="status" id="calibStatus"></div>
+        <div id="calibForm" hidden class="field">
+          <label for="calibLen">Longueur réelle du trait (m)</label>
+          <div class="btnrow"><input type="number" id="calibLen" min="0.1" step="0.01" style="flex:1"><button type="button" class="btn acc" id="calibOk">Valider</button></div>
+        </div>
+        <p class="small">Dans Google Maps : clic droit sur un angle du toit › « Mesurer une distance ». Prenez la plus grande longueur possible.</p>
+      </section>
+
+      <section class="card">
+        <h2>Pans de toiture <span class="step">Étape 3</span></h2>
+        <div class="panlist" id="panList"></div>
+        <p class="small" id="obsInfo"></p>
+        <div class="editor" id="panEditor" hidden>
+          <div class="field"><label for="pName">Nom du pan</label><input type="text" id="pName" maxlength="40"></div>
+          <div class="two">
+            <div class="field"><label for="pSlope">Pente (°)</label><input type="number" id="pSlope" min="0" max="75" step="1"></div>
+            <div class="field"><label for="pEaveH">Hauteur à l'égout (m)</label><input type="number" id="pEaveH" min="0" max="40" step="0.1"></div>
+          </div>
+          <div class="field" id="pTiltWrap" hidden><label for="pTilt">Toit plat : inclinaison des supports (°)</label><input type="number" id="pTilt" min="0" max="35" step="1"></div>
+          <div class="field" id="pPoseWrap"><label for="pPose">Pose des modules</label>
+            <select id="pPose"><option value="portrait">Portrait</option><option value="paysage">Paysage</option></select></div>
+          <p class="readout" id="pRead"></p>
+          <p class="readout" id="pJoins"></p>
+          <button type="button" class="btn acc" id="pAlign" hidden>Aligner la hauteur sur les pans voisins</button>
+          <div class="btnrow">
+            <button type="button" class="btn" id="pEave">Choisir l'égout</button>
+            <button type="button" class="btn" id="pReset">Remettre les panneaux</button>
+            <button type="button" class="btn danger" id="pDel">Supprimer le pan</button>
+          </div>
+        </div>
+        <div class="editor" id="obsEditor" hidden>
+          <div class="field"><label for="oKind">Type d'obstacle</label>
+            <select id="oKind"><option value="chem">Cheminée</option><option value="velux">Fenêtre de toit</option><option value="autre">Autre (VMC, antenne…)</option></select></div>
+          <div class="btnrow"><button type="button" class="btn danger" id="oDel">Supprimer l'obstacle</button></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Puissance imposée <span class="step">Étape 4</span></h2>
+        <label class="switch"><input type="checkbox" id="fOn"><span>Poser une puissance donnée, en commençant par les pans les plus productifs</span></label>
+        <div id="fBox" hidden class="field">
+          <label for="fTarget">Puissance voulue (kWc)</label>
+          <div class="btnrow"><input type="number" id="fTarget" min="0.5" step="0.5" style="flex:1"><button type="button" class="btn acc" id="fPlace">Poser les panneaux</button></div>
+          <p class="readout" id="fInfo"></p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Module</h2>
+        <div class="field"><label for="mPreset">Modèle</label>
+          <select id="mPreset">
+            <option value="p2000">2000 × 1000 mm · 500 Wc (FRH)</option>
+            <option value="p425">1722 × 1134 mm · 425 Wc</option>
+            <option value="p450">1762 × 1134 mm · 450 Wc</option>
+            <option value="p500">1961 × 1134 mm · 500 Wc</option>
+            <option value="custom">Personnalisé</option>
+          </select></div>
+        <div class="three">
+          <div class="field"><label for="mH">Longueur (mm)</label><input type="number" id="mH" min="500" step="1"></div>
+          <div class="field"><label for="mW">Largeur (mm)</label><input type="number" id="mW" min="500" step="1"></div>
+          <div class="field"><label for="mWp">Puissance (Wc)</label><input type="number" id="mWp" min="50" step="5"></div>
+        </div>
+        <div class="field"><label for="mShade">Toit plat : sans ombre au solstice d'hiver</label><select id="mShade"><option value="1014">de 10 h à 14 h</option><option value="noon">à midi</option></select></div>
+        <div class="two">
+          <div class="field"><label for="mMargin">Marge de rive (cm)</label><input type="number" id="mMargin" min="0" step="5"></div>
+          <div class="field"><label for="mGap">Espace entre modules (cm)</label><input type="number" id="mGap" min="0" step="0.5"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Site et production</h2>
+        <div class="field"><label for="mGps">Coordonnées GPS du chantier</label>
+          <div class="btnrow"><input type="text" id="mGps" placeholder="ex. 48.8566, 2.3522" style="flex:1" inputmode="decimal"><button type="button" class="btn acc" id="mGpsOk">Appliquer</button></div>
+          <span class="small" id="mGpsInfo">Copiez-les depuis Google Maps (clic droit sur la maison, puis clic sur les chiffres).</span></div>
+        <div class="field"><label for="mSite">Référence d'ensoleillement</label><select id="mSite"></select></div>
+        <div class="field"><label for="mSrc">Calcul de la production</label><select id="mSrc"><option value="auto">PVGIS si disponible, sinon calcul interne</option><option value="internal">Calcul interne uniquement</option></select></div>
+        <p class="readout" id="pvStatus"></p>
+        <div class="three">
+          <div class="field"><label for="mLat">Latitude (°)</label><input type="number" id="mLat" min="-40" max="60" step="0.01"></div>
+          <div class="field" id="ghiWrap"><label for="mGhi">Irradiation (kWh/m²/an)</label><input type="number" id="mGhi" min="700" max="2200" step="10"></div>
+          <div class="field" id="prWrap"><label for="mPr">Rendement global (%)</label><input type="number" id="mPr" min="50" max="95" step="1"></div>
+          <div class="field" id="lossWrap" hidden><label for="mLoss">Pertes système (%)</label><input type="number" id="mLoss" min="0" max="40" step="1"></div>
+        </div>
+        <p class="small">Irradiation horizontale annuelle moyenne de la ville (valeur indicative). Pour plus de précision, remplacez-la par la valeur <a href="https://re.jrc.ec.europa.eu/pvg_tools/fr/" target="_blank" rel="noopener">PVGIS</a> de l'adresse exacte. Le rendement global couvre température, onduleur, câbles et salissures (80 % est une valeur courante).</p>
+      </section>
+
+      <section class="card">
+        <h2>Récapitulatif</h2>
+        <div class="totals">
+          <div class="tot main"><span class="k">Puissance</span><span class="v" id="tKwc">–</span></div>
+          <div class="tot main"><span class="k">Production / an</span><span class="v" id="tProd">–</span></div>
+          <div class="tot"><span class="k">Modules</span><span class="v" id="tN">–</span></div>
+          <div class="tot"><span class="k">Capteurs</span><span class="v" id="tArea">–</span></div>
+        </div>
+        <div id="prodWrap" hidden>
+          <div class="chartwrap"><div class="k small">Production mensuelle estimée (kWh)</div><div id="prodChart"></div><div class="ptip" id="prodTip" hidden></div></div>
+          <table class="ptab"><thead><tr><th>Pan</th><th>kWc</th><th>kWh/an</th><th>kWh/kWc</th></tr></thead><tbody id="prodRows"></tbody></table>
+        </div>
+        <div class="btnrow">
+          <button type="button" class="btn acc" id="copyBtn">Copier le récapitulatif</button>
+          <button type="button" class="btn" id="shareBtn">Copier le projet (pour Claude)</button>
+          <button type="button" class="btn danger" id="clearBtn">Effacer le dessin</button>
+        </div>
+        <textarea class="copy" id="copyArea" hidden readonly aria-label="Récapitulatif à copier"></textarea>
+        <p class="small">Estimation de pré-étude : les hauteurs sont déduites des pentes saisies, pas d'un relevé. À confirmer sur site.</p>
+      </section>
+    </aside>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const cv=$('cv'), ctx=cv.getContext('2d'), stage=$('stage');
+const COLORS=['#f59e0b','#38bdf8','#34d399','#f472b6','#a78bfa','#fb923c','#2dd4bf','#facc15'];
+const PRESETS={p2000:{w:1000,h:2000,wp:500},p425:{w:1134,h:1722,wp:425},p450:{w:1134,h:1762,wp:450},p500:{w:1134,h:1961,wp:500}};
+const KEY='frh-calepinage-v1';
+const S={img:null,imgURL:null,imgW:0,imgH:0,isExample:false,mpp:null,calib:null,pans:[],obstacles:[],
+  mod:{src:'auto',loss:14,preset:'p2000',w:1000,h:2000,wp:500,margin:30,gap:2,lat:48.9,shade:'1014',site:4,ghi:1220,pr:80},
+  sel:null,mode:'select',sub:null,draft:[],calibDraft:[],hover:null,snap:null,shift:false,
+  forced:{on:false,target:6,placed:false},view:{s:1,ox:0,oy:0},layouts:{},seq:1,colorIdx:0,view3d:false};
+const hist=[];
+
+/* ---------- utilitaires ---------- */
+const nf=(n,d=0)=>Number(n).toLocaleString('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y}), dot=(a,b)=>a.x*b.x+a.y*b.y, len=a=>Math.hypot(a.x,a.y);
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2600);}
+function areaSigned(P){let a=0;for(let i=0;i<P.length;i++){const p=P[i],q=P[(i+1)%P.length];a+=p.x*q.y-q.x*p.y;}return a/2;}
+function centroid(P){const A=areaSigned(P);if(Math.abs(A)<1e-9){let x=0,y=0;P.forEach(p=>{x+=p.x;y+=p.y});return{x:x/P.length,y:y/P.length};}
+  let cx=0,cy=0;for(let i=0;i<P.length;i++){const p=P[i],q=P[(i+1)%P.length],f=p.x*q.y-q.x*p.y;cx+=(p.x+q.x)*f;cy+=(p.y+q.y)*f;}return{x:cx/(6*A),y:cy/(6*A)};}
+function pip(p,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];if(((a.y>p.y)!==(b.y>p.y))&&(p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x))c=!c;}return c;}
+function orient(a,b,c){return (b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);}
+function segX(a,b,c,d){const e=1e-12,o1=orient(a,b,c),o2=orient(a,b,d),o3=orient(c,d,a),o4=orient(c,d,b);return ((o1>e&&o2<-e)||(o1<-e&&o2>e))&&((o3>e&&o4<-e)||(o3<-e&&o4>e));}
+function edgesCross(A,B){for(let i=0;i<A.length;i++){const a=A[i],b=A[(i+1)%A.length];for(let j=0;j<B.length;j++){if(segX(a,b,B[j],B[(j+1)%B.length]))return true;}}return false;}
+function polysOverlap(A,B){return edgesCross(A,B)||A.some(p=>pip(p,B))||B.some(p=>pip(p,A));}
+function rectContained(R,P){if(!R.every(p=>pip(p,P)))return false;if(edgesCross(R,P))return false;
+  const x0=R[0].x,y0=R[0].y,x1=R[2].x,y1=R[2].y;return !P.some(p=>p.x>x0&&p.x<x1&&p.y>y0&&p.y<y1);}
+function distPtSeg(p,a,b){const ab=sub(b,a),L2=dot(ab,ab)||1e-12;const t=clamp(dot(sub(p,a),ab)/L2,0,1);const q={x:a.x+ab.x*t,y:a.y+ab.y*t};return{d:len(sub(p,q)),q,t};}
+function nearestEdge(P,p){let best=null;for(let i=0;i<P.length;i++){const r=distPtSeg(p,P[i],P[(i+1)%P.length]);if(!best||r.d<best.d)best={i,d:r.d,q:r.q};}return best;}
+const rect=(x0,y0,x1,y1)=>[{x:x0,y:y0},{x:x1,y:y0},{x:x1,y:y1},{x:x0,y:y1}];
+
+/* ---------- géométrie des pans ---------- */
+function eaveFrame(P,e){const n=P.length;e=((e%n)+n)%n;const A=P[e],B=P[(e+1)%n];let u=sub(B,A);const L=len(u)||1;u={x:u.x/L,y:u.y/L};
+  let d={x:u.y,y:-u.x};const C=centroid(P);if(dot(sub(C,A),d)>0)d={x:-d.x,y:-d.y};return{A,B,u,d};}
+function frame(pan){const m=S.mpp||1;const P=pan.pts.map(p=>({x:p.x*m,y:p.y*m}));const {A,u,d}=eaveFrame(P,pan.eave);
+  const sl=pan.slope*Math.PI/180,c=Math.cos(sl),t=Math.tan(sl);
+  return{P,A,u,d,c,t,
+    toUV:p=>{const q=sub(p,A);return{x:dot(q,u),y:-dot(q,d)/c};},
+    fromUV:q=>({x:A.x+u.x*q.x-d.x*q.y*c,y:A.y+u.y*q.x-d.y*q.y*c}),
+    height:p=>pan.eaveH+(-dot(sub(p,A),d))*t};}
+function defaultEave(pts){let best=0,bl=-1,by=-1e9;for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];const L=len(sub(b,a)),y=(a.y+b.y)/2;
+  if(L>bl*1.05||(L>bl*0.95&&y>by)){best=i;bl=Math.max(L,bl);by=y;}}return best;}
+function orientOf(p){const f=eaveFrame(p.pts,p.eave);const az=(Math.atan2(f.d.x,-f.d.y)*180/Math.PI+360)%360;const k=Math.round(az/45)%8;
+  return{az,name:['Nord','Nord-est','Est','Sud-est','Sud','Sud-ouest','Ouest','Nord-ouest'][k],short:['N','NE','E','SE','S','SO','O','NO'][k]};}
+
+const isFlat=p=>p.slope<=5;
+const isOff=(pan,key)=>S.forced.on?!(pan.on||[]).includes(key):pan.off.includes(key);
+/* ---------- production : moyenne journalière mensuelle, décomposition horaire (Collares-Pereira & Rabl, Liu-Jordan),
+   fraction diffuse (Erbs), transposition Hay-Davies sur le plan des modules, albédo 0,2 ---------- */
+const SITES=[['Lille',50.6,1080,0],['Rouen / Caen',49.3,1140,.05],['Brest',48.4,1180,.1],['Rennes',48.1,1230,.15],['Paris',48.9,1220,.1],
+  ['Strasbourg',48.6,1210,.1],['Nancy / Metz',48.9,1180,.05],['Reims',49.3,1160,.05],['Nantes',47.2,1300,.25],['Tours / Orléans',47.6,1270,.2],
+  ['Dijon',47.3,1280,.2],['Poitiers / La Rochelle',46.4,1350,.3],['Limoges',45.8,1300,.3],['Clermont-Ferrand',45.8,1340,.35],['Lyon',45.8,1360,.4],
+  ['Grenoble / Annecy',45.5,1390,.45],['Bordeaux',44.8,1400,.45],['Pau / Bayonne',43.4,1400,.45],['Toulouse',43.6,1460,.55],['Montpellier / Nîmes',43.7,1650,.9],
+  ['Perpignan',42.7,1700,.95],['Marseille / Avignon',43.5,1700,1],['Toulon / Nice',43.3,1700,1],['Ajaccio / Bastia',42.3,1720,1],
+  ['Martinique',14.6,1900,'T'],['Guadeloupe',16.2,1950,'T'],['Guyane',4.9,1750,'T'],['La Réunion (littoral)',-21.0,1850,'T'],['Mayotte',-12.8,2000,'T']];
+/* longitudes des références, dans le même ordre (pour la ville la plus proche d'un point GPS) */
+const SITE_LON=[3.06,0.5,-4.49,-1.68,2.35,7.75,6.18,4.03,-1.55,1.3,5.04,-0.6,1.26,3.08,4.84,5.9,-0.58,-0.9,1.44,4.0,2.9,5.1,6.6,9.0,-61.05,-61.55,-52.33,55.5,45.15];
+const KT_T=[.55,.57,.58,.57,.54,.52,.53,.54,.52,.51,.50,.52];
+const south=()=>(S.mod.lat??46)<0;const equatorName=()=>south()?'plein nord':'plein sud';
+const KT_N=[.32,.38,.43,.47,.49,.51,.52,.50,.47,.40,.33,.29],KT_S=[.48,.52,.55,.57,.59,.63,.66,.63,.58,.52,.47,.46];
+const MDAY=[17,47,75,105,135,162,198,228,258,288,318,344],NDAYS=[31,28,31,30,31,30,31,31,30,31,30,31];
+const MOIS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+let climCache=null,poaCache={};
+function climate(){const m=S.mod,key=[m.lat,m.ghi,m.site].join('|');if(climCache&&climCache.key===key)return climCache;
+  const lat=(m.lat??46)*Math.PI/180,c=(SITES[m.site]||SITES[4])[3],trop=c==='T';const rows=[];let sum=0;
+  for(let i=0;i<12;i++){const n=MDAY[i],d=23.45*Math.PI/180*Math.sin(2*Math.PI*(284+n)/365);const ws=Math.acos(clamp(-Math.tan(lat)*Math.tan(d),-1,1));
+    const H0=24/Math.PI*1.367*(1+0.033*Math.cos(2*Math.PI*n/365))*(Math.cos(lat)*Math.cos(d)*Math.sin(ws)+ws*Math.sin(lat)*Math.sin(d));
+    const kt=trop?KT_T[i]:KT_N[i]*(1-c)+KT_S[i]*c;rows.push({n,d,ws,H0,kt});sum+=kt*H0*NDAYS[i];}
+  const k=(m.ghi||1200)/sum;rows.forEach(r=>{r.kt=clamp(r.kt*k,0.1,0.78);r.H=r.kt*r.H0;
+    const wsd=r.ws*180/Math.PI,K=r.kt;r.fd=wsd<=81.4?1.391-3.560*K+4.189*K*K-2.137*K*K*K:1.311-3.022*K+3.427*K*K-1.821*K*K*K;r.fd=clamp(r.fd,0.1,1);});
+  poaCache={};climCache={key,lat,rows};return climCache;}
+/* irradiation mensuelle reçue par m² de module (kWh/m²) pour une inclinaison et un azimut (0 = sud, est négatif) */
+function poaMonthly(tiltDeg,gammaDeg){const C=climate();const key=tiltDeg.toFixed(1)+'|'+gammaDeg.toFixed(1);if(poaCache[key])return poaCache[key];
+  const b=tiltDeg*Math.PI/180,g=gammaDeg*Math.PI/180,phi=C.lat,rho=0.2,out=[];
+  C.rows.forEach((r,i)=>{const {d,ws,H,fd,n}=r;const Hd=H*fd;const a=0.409+0.5016*Math.sin(ws-Math.PI/3),bb=0.6609-0.4767*Math.sin(ws-Math.PI/3);
+    const den=Math.sin(ws)-ws*Math.cos(ws);const E0=1.367*(1+0.033*Math.cos(2*Math.PI*n/365));let day=0;const steps=48,dw=2*ws/steps;
+    for(let k=0;k<steps;k++){const w=-ws+(k+0.5)*dw;const dt=dw*12/Math.PI;
+      const rt=Math.PI/24*(a+bb*Math.cos(w))*(Math.cos(w)-Math.cos(ws))/den,rd=Math.PI/24*(Math.cos(w)-Math.cos(ws))/den;
+      const I=Math.max(0,rt*H),Id=Math.min(I,Math.max(0,rd*Hd)),Ib=I-Id;
+      const cz=Math.cos(phi)*Math.cos(d)*Math.cos(w)+Math.sin(phi)*Math.sin(d);if(cz<=0.01)continue;
+      const ct=Math.sin(d)*Math.sin(phi)*Math.cos(b)-Math.sin(d)*Math.cos(phi)*Math.sin(b)*Math.cos(g)+Math.cos(d)*Math.cos(phi)*Math.cos(b)*Math.cos(w)
+        +Math.cos(d)*Math.sin(phi)*Math.sin(b)*Math.cos(g)*Math.cos(w)+Math.cos(d)*Math.sin(b)*Math.sin(g)*Math.sin(w);
+      const Rb=Math.max(0,ct)/Math.max(cz,0.08),Ai=clamp(Ib/(E0*cz),0,1);
+      const It=(Ib+Id*Ai)*Rb+Id*(1-Ai)*(1+Math.cos(b))/2+I*rho*(1-Math.cos(b))/2;day+=It*dt/1;}
+    out.push(day*NDAYS[i]);});
+  poaCache[key]=out;return out;}
+/* ---------- PVGIS (Commission européenne) via le serveur de l'outil : /api/pvgis ---------- */
+const PV={available:false,checked:false,cache:{},prom:{},err:null,db:null};
+function pvCoords(){const m=S.mod;if(m.gpsLat!=null&&m.gpsLon!=null)return{lat:m.gpsLat,lon:m.gpsLon,gps:true};const i=m.site??4;return{lat:SITES[i][1],lon:SITE_LON[i],gps:false};}
+function usePvgis(){return PV.available&&S.mod.src!=='internal';}
+function pvKey(tilt,gam){const c=pvCoords();return[c.lat.toFixed(4),c.lon.toFixed(4),Math.round(tilt),Math.round(gam),S.mod.loss??14].join('|');}
+function pvFetch(tilt,gam){const key=pvKey(tilt,gam);if(PV.prom[key])return PV.prom[key];const c=pvCoords();
+  const q=new URLSearchParams({lat:c.lat,lon:c.lon,angle:Math.round(tilt),aspect:Math.round(gam),loss:S.mod.loss??14});
+  PV.prom[key]=fetch('api/pvgis?'+q).then(r=>r.json().then(j=>{if(!r.ok||!j.monthly)throw new Error(j.error||('Erreur '+r.status));return j;}))
+    .then(j=>{PV.cache[key]=j.monthly;PV.err=null;if(j.database)PV.db=j.database;pvRefresh();return j.monthly;})
+    .catch(e=>{PV.cache[key]='error';PV.err=e.message;pvRefresh();return null;});
+  return PV.prom[key];}
+let pvT=null;function pvRefresh(){clearTimeout(pvT);pvT=setTimeout(()=>{changed();renderPvStatus();},60);}
+/* kWh/kWc mensuels : PVGIS (pertes système incluses) si disponible, sinon modèle interne × rendement global */
+function specMonthly(tilt,gam){if(usePvgis()){const k=pvKey(tilt,gam),v=PV.cache[k];if(Array.isArray(v))return{mon:v,src:'pvgis'};if(v!=='error'){pvFetch(tilt,gam);}}
+  const pr=(S.mod.pr??80)/100;return{mon:poaMonthly(tilt,gam).map(x=>x*pr),src:usePvgis()&&PV.cache[pvKey(tilt,gam)]!=='error'?'pending':'internal'};}
+function panAngles(p){const fl=isFlat(p);return fl?{tilt:p.tilt??10,gam:south()?180:0}:{tilt:p.slope,gam:orientOf(p).az-180};}
+function panProd(p){const L=S.layouts[p.id],n=activeCount(p);if(!S.mpp||!L||!n)return{kwc:0,year:0,mon:new Array(12).fill(0),spec:0};
+  const {tilt,gam}=L.flat?{tilt:L.tilt,gam:south()?180:0}:panAngles(p);
+  const kwc=n*S.mod.wp/1000,sm=specMonthly(tilt,gam);const mon=sm.mon.map(v=>v*kwc);const year=mon.reduce((a,b)=>a+b,0);
+  return{kwc,year,mon,spec:kwc?year/kwc:0,tilt,gam,src:sm.src};}
+function renderPvStatus(){const el=$('pvStatus');if(!el)return;const c=pvCoords();
+  const where=c.gps?`au point ${nf(c.lat,4)}, ${nf(c.lon,4)}`:`à ${(SITES[S.mod.site??4]||SITES[4])[0]} (saisissez les coordonnées GPS pour le point exact)`;
+  $('lossWrap').hidden=!usePvgis();$('prWrap').hidden=usePvgis();$('ghiWrap').hidden=usePvgis();
+  if(!PV.checked){el.innerHTML='Recherche du service PVGIS…';return;}
+  if(!PV.available){el.innerHTML='<span class="pill">Calcul interne</span> PVGIS n\'est pas joignable depuis cette page (il faut la version hébergée sur votre serveur).';return;}
+  if(S.mod.src==='internal'){el.innerHTML='<span class="pill">Calcul interne</span> choisi manuellement.';return;}
+  const pending=Object.values(PV.cache).length<Object.keys(PV.prom).length;
+  if(PV.err)el.innerHTML=`<span class="pill warn">PVGIS en erreur</span> ${esc(PV.err)} · calcul interne utilisé en attendant.`;
+  else el.innerHTML=`<span class="pill ok">PVGIS</span> ${pending?'calcul en cours… ':''}données satellite ${where}${PV.db?' · base '+esc(PV.db):''}.`;}
+function pvCheck(){if(location.protocol==='file:'){PV.checked=true;renderPvStatus();return;}
+  const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),5000);
+  fetch('api/pvgis?ping=1',{signal:ctl.signal}).then(r=>r.ok?r.json():null).then(j=>{PV.available=!!(j&&j.ok);}).catch(()=>{PV.available=false;})
+    .finally(()=>{clearTimeout(t);PV.checked=true;renderPvStatus();changed();});}
+/* écart entre rangées : longueur de l'ombre portée vers le nord par le bord haut d'une rangée, le 21 décembre */
+function rowGap(tilt){const lat=(S.mod.lat??46)*Math.PI/180,d=(south()?23.44:-23.44)*Math.PI/180,H=(S.mod.shade==='noon'?0:30)*Math.PI/180;
+  const sN=Math.cos(lat)*Math.sin(d)-Math.sin(lat)*Math.cos(d)*Math.cos(H),sU=Math.sin(lat)*Math.sin(d)+Math.cos(lat)*Math.cos(d)*Math.cos(H);
+  const h=S.mod.w/1000*Math.sin(tilt*Math.PI/180);if(sU<=0.02)return h*20;return Math.max(0,h*Math.abs(sN)/sU);}
+function layoutFlat(pan){const m=S.mpp;const poly=pan.pts.map(p=>({x:p.x*m,y:p.y*m}));const area=Math.abs(areaSigned(poly));
+  const tilt=clamp(pan.tilt??10,0,35),tr=tilt*Math.PI/180;const W=S.mod.w/1000,H=S.mod.h/1000,g=Math.max(0,S.mod.gap)/100,mg=Math.max(0,S.mod.margin)/100;
+  if(!(W>0.2&&H>0.2))return{panels:[],area,flat:true};
+  const du=H,dv=W*Math.cos(tr),gapRow=rowGap(tilt),pitch=dv+gapRow,rise=W*Math.sin(tr);
+  const obs=S.obstacles.map(o=>o.pts.map(p=>({x:p.x*m,y:p.y*m})));
+  let umin=Infinity,umax=-Infinity,vmin=Infinity,vmax=-Infinity;poly.forEach(p=>{umin=Math.min(umin,p.x);umax=Math.max(umax,p.x);vmin=Math.min(vmin,p.y);vmax=Math.max(vmax,p.y);});
+  let best=[];
+  for(const fu of [0,.25,.5,.75])for(const fv of [0,.25,.5,.75]){const res=[];
+    for(let v=vmin+mg+fv*pitch;v+dv<=vmax-mg+1e-9;v+=pitch)for(let u=umin+mg+fu*(du+g);u+du<=umax-mg+1e-9;u+=du+g){
+      const ex=rect(u-mg,v-mg,u+du+mg,v+dv+mg);if(!rectContained(ex,poly))continue;if(obs.some(o=>polysOverlap(o,ex)))continue;res.push({u,v});}
+    if(res.length>best.length)best=res;}
+  const panels=best.map(({u,v})=>{const key='f'+u.toFixed(2)+':'+v.toFixed(2);return{key,u,v,off:isOff(pan,key),plan:rect(u,v,u+du,v+dv)};});
+  return{panels,area,flat:true,tilt,rise,gapRow,pitch,south:south()};}
+function layoutPan(pan){
+  if(!S.mpp||pan.pts.length<3)return{panels:[],area:0};
+  if(isFlat(pan))return layoutFlat(pan);
+  const F=frame(pan);const poly=F.P.map(F.toUV);const area=Math.abs(areaSigned(poly));
+  const mo=S.mod,W=mo.w/1000,H=mo.h/1000,g=Math.max(0,mo.gap)/100,mg=Math.max(0,mo.margin)/100;
+  if(!(W>0.2&&H>0.2))return{panels:[],area};
+  const du=pan.pose==='paysage'?H:W,dv=pan.pose==='paysage'?W:H;
+  const obs=S.obstacles.map(o=>o.pts.map(p=>F.toUV({x:p.x*S.mpp,y:p.y*S.mpp})));
+  let umin=Infinity,umax=-Infinity,vmin=Infinity,vmax=-Infinity;poly.forEach(p=>{umin=Math.min(umin,p.x);umax=Math.max(umax,p.x);vmin=Math.min(vmin,p.y);vmax=Math.max(vmax,p.y);});
+  let best=[];
+  for(const fu of [0,.25,.5,.75])for(const fv of [0,.5]){
+    const res=[];
+    for(let v=vmin+mg+fv*(dv+g);v+dv<=vmax-mg+1e-9;v+=dv+g)
+      for(let u=umin+mg+fu*(du+g);u+du<=umax-mg+1e-9;u+=du+g){
+        const ex=rect(u-mg,v-mg,u+du+mg,v+dv+mg);
+        if(!rectContained(ex,poly))continue;
+        if(obs.some(o=>polysOverlap(o,ex)))continue;
+        res.push({u,v});
+      }
+    if(res.length>best.length)best=res;
+  }
+  const panels=best.map(({u,v})=>{const key=u.toFixed(2)+':'+v.toFixed(2);
+    return{key,u,v,off:isOff(pan,key),plan:[{x:u,y:v},{x:u+du,y:v},{x:u+du,y:v+dv},{x:u,y:v+dv}].map(F.fromUV)};});
+  return{panels,area};
+}
+/* raccords entre pans : un sommet posé sur le contour d'un autre pan doit avoir la même hauteur */
+function onBoundary(pt,q,tol){return q.pts.some((c,j)=>distPtSeg(pt,c,q.pts[(j+1)%q.pts.length]).d<tol);}
+function heightAtPx(p,pt){const F=frame(p);return F.height({x:pt.x*S.mpp,y:pt.y*S.mpp});}
+function joinTol(){return Math.max(1,0.03/(S.mpp||1));}
+function panJoins(p){const tol=joinTol(),res=[];if(!S.mpp)return res;
+  S.pans.forEach(q=>{if(q===p||q.pts.length<3)return;const diffs=[];
+    p.pts.forEach(v=>{if(onBoundary(v,q,tol))diffs.push(heightAtPx(q,v)-heightAtPx(p,v));});
+    q.pts.forEach(v=>{if(onBoundary(v,p,tol)&&!p.pts.some(w=>Math.hypot(w.x-v.x,w.y-v.y)<tol))diffs.push(heightAtPx(q,v)-heightAtPx(p,v));});
+    if(diffs.length)res.push({q,diffs,max:Math.max(...diffs.map(Math.abs))});});
+  return res;}
+function weldedHeights(p){const F=frame(p),tol=joinTol();
+  return p.pts.map((v,i)=>{const hs=[F.height(F.P[i])];S.pans.forEach(q=>{if(q!==p&&q.pts.length>=3&&onBoundary(v,q,tol))hs.push(heightAtPx(q,v));});return hs.reduce((a,b)=>a+b,0)/hs.length;});}
+function recalc(){S.layouts={};S.pans.forEach(p=>S.layouts[p.id]=layoutPan(p));}
+function activeCount(p){const L=S.layouts[p.id];return L?L.panels.filter(x=>!x.off).length:0;}
+
+/* ---------- état, historique, sauvegarde ---------- */
+function snapshot(){hist.push(JSON.stringify({pans:S.pans,obstacles:S.obstacles,calib:S.calib,mpp:S.mpp,forced:S.forced}));if(hist.length>80)hist.shift();}
+function undo(){const s=hist.pop();if(!s){toast('Rien à annuler');return;}const o=JSON.parse(s);S.pans=o.pans;S.obstacles=o.obstacles;S.calib=o.calib;S.mpp=o.mpp;if(o.forced)S.forced=o.forced;renderForced();
+  if(S.sel&&!selItem())S.sel=null;S.draft=[];changed();renderEditor();renderCalib();}
+let saveT=null;
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{const base={v:1,isExample:S.isExample,pans:S.pans,obstacles:S.obstacles,calib:S.calib,mpp:S.mpp,mod:S.mod,modV2:true,modV3:true,seq:S.seq,colorIdx:S.colorIdx,roofMode:S.roofMode,forced:S.forced};
+  try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:S.isExample?null:S.imgURL},base)));}catch(e){try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:null,imgLost:true},base)));}catch(_){}}},400);}
+function changed(){recalc();if(typeof renderPvStatus==='function'&&$('pvStatus'))renderPvStatus();if(typeof renderForced==='function'&&$('fOn'))try{renderForced();}catch(e){}renderList();renderSummary();renderReadout();draw();T3.dirty=true;if(S.view3d)show3d();save();}
+function selItem(){if(!S.sel)return null;return S.sel.type==='pan'?S.pans.find(p=>p.id===S.sel.id):S.obstacles.find(o=>o.id===S.sel.id);}
+function select(type,id){S.sel=type?{type,id}:null;S.sub=null;renderList();renderEditor();draw();setHint();}
+function deleteSel(){const it=selItem();if(!it)return;snapshot();if(S.sel.type==='pan')S.pans=S.pans.filter(p=>p!==it);else S.obstacles=S.obstacles.filter(o=>o!==it);S.sel=null;changed();renderEditor();}
+
+/* ---------- vue 2D ---------- */
+const toImg=sp=>({x:(sp.x-S.view.ox)/S.view.s,y:(sp.y-S.view.oy)/S.view.s});
+const toScr=ip=>({x:ip.x*S.view.s+S.view.ox,y:ip.y*S.view.s+S.view.oy});
+function resize(){const dpr=window.devicePixelRatio||1,w=stage.clientWidth,h=stage.clientHeight;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);if(!resize.done&&S.img){fit();resize.done=true;}draw();}
+function fit(){if(!S.img)return;const w=stage.clientWidth,h=stage.clientHeight;let bx0=0,by0=0,bx1=S.imgW,by1=S.imgH;
+  const s=Math.min(w/(bx1-bx0),h/(by1-by0))*0.96;S.view={s,ox:(w-(bx1-bx0)*s)/2-bx0*s,oy:(h-(by1-by0)*s)/2-by0*s};draw();}
+function zoomAt(sp,f){const ip=toImg(sp);S.view.s=clamp(S.view.s*f,0.03,60);S.view.ox=sp.x-ip.x*S.view.s;S.view.oy=sp.y-ip.y*S.view.s;}
+function pathPts(P){ctx.beginPath();P.forEach((q,j)=>j?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.closePath();}
+
+function draw(){
+  const dpr=window.devicePixelRatio||1,w=cv.width/dpr,h=cv.height/dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+  if(!S.img)return;
+  const V=S.view,px=1/V.s;
+  ctx.save();ctx.translate(V.ox,V.oy);ctx.scale(V.s,V.s);
+  ctx.imageSmoothingQuality='high';ctx.drawImage(S.img,0,0,S.imgW,S.imgH);
+  S.pans.forEach(p=>{const col=COLORS[p.color%COLORS.length],sel=S.sel&&S.sel.type==='pan'&&S.sel.id===p.id;
+    pathPts(p.pts);ctx.globalAlpha=sel?.30:.16;ctx.fillStyle=col;ctx.fill();ctx.globalAlpha=1;ctx.lineWidth=(sel?2.5:1.6)*px;ctx.strokeStyle=col;ctx.stroke();
+    const n=p.pts.length,e=((p.eave%n)+n)%n,a=p.pts[e],b=p.pts[(e+1)%n];
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.lineWidth=(S.sub==='eave'&&sel?7:5)*px;ctx.strokeStyle=col;ctx.stroke();});
+  if(S.mpp){const k=1/S.mpp;
+    S.pans.forEach(p=>{const L=S.layouts[p.id];if(!L)return;L.panels.forEach(pn=>{
+      ctx.beginPath();pn.plan.forEach((q,j)=>j?ctx.lineTo(q.x*k,q.y*k):ctx.moveTo(q.x*k,q.y*k));ctx.closePath();
+      if(pn.off){if(S.mode==='panels'){ctx.setLineDash([4*px,3*px]);ctx.lineWidth=1.2*px;ctx.strokeStyle='rgba(255,255,255,.9)';ctx.stroke();ctx.setLineDash([]);}}
+      else{ctx.fillStyle='rgba(18,31,58,.9)';ctx.fill();ctx.lineWidth=1*px;ctx.strokeStyle='rgba(196,210,232,.95)';ctx.stroke();}});});}
+  const OBS_COL={chem:['rgba(224,57,43,.40)','#ff5a47'],velux:['rgba(56,189,248,.40)','#38bdf8'],autre:['rgba(250,204,21,.40)','#facc15']};
+  S.obstacles.forEach(o=>{const sel=S.sel&&S.sel.type==='obs'&&S.sel.id===o.id;const cc=OBS_COL[o.kind]||OBS_COL.autre;pathPts(o.pts);ctx.fillStyle=cc[0];ctx.fill();ctx.lineWidth=(sel?2.5:1.5)*px;ctx.strokeStyle=cc[1];ctx.stroke();});
+  const it=selItem();
+  if(it&&S.mode==='select')it.pts.forEach(q=>{ctx.beginPath();ctx.arc(q.x,q.y,4.5*px,0,7);ctx.fillStyle='#fff';ctx.fill();ctx.lineWidth=1.5*px;ctx.strokeStyle='#111';ctx.stroke();});
+  // calibration
+  let cl=null;
+  if(S.mode==='calib'){if(S.calibDraft.length===1&&S.hover)cl=[S.calibDraft[0],S.hover];else if(S.calibDraft.length===2)cl=S.calibDraft;else if(S.calib)cl=[S.calib.a,S.calib.b];}
+  if(cl){ctx.setLineDash([8*px,5*px]);ctx.lineWidth=2.5*px;ctx.strokeStyle='#ffd43b';ctx.beginPath();ctx.moveTo(cl[0].x,cl[0].y);ctx.lineTo(cl[1].x,cl[1].y);ctx.stroke();ctx.setLineDash([]);
+    cl.forEach(q=>{ctx.beginPath();ctx.arc(q.x,q.y,5*px,0,7);ctx.fillStyle='#ffd43b';ctx.fill();});}
+  else if(S.mode==='calib'&&S.calibDraft.length===1){const q=S.calibDraft[0];ctx.beginPath();ctx.arc(q.x,q.y,5*px,0,7);ctx.fillStyle='#ffd43b';ctx.fill();}
+  // tracé en cours
+  if(S.draft.length){const col=S.mode==='obstacle'?'#ff5a47':'#ffd43b';const pts=S.hover?[...S.draft,S.hover]:S.draft;
+    ctx.beginPath();pts.forEach((q,j)=>j?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.lineWidth=2*px;ctx.strokeStyle=col;ctx.stroke();
+    if(S.draft.length>=3&&S.hover){ctx.setLineDash([4*px,4*px]);ctx.beginPath();ctx.moveTo(S.hover.x,S.hover.y);ctx.lineTo(S.draft[0].x,S.draft[0].y);ctx.stroke();ctx.setLineDash([]);}
+    S.draft.forEach((q,j)=>{ctx.beginPath();ctx.arc(q.x,q.y,(j===0?6:4)*px,0,7);ctx.fillStyle=j===0?col:'#fff';ctx.fill();ctx.lineWidth=1.2*px;ctx.strokeStyle='#111';ctx.stroke();});}
+  ctx.restore();
+  // repères en coordonnées écran
+  ctx.font='600 12px Figtree, system-ui, sans-serif';ctx.textBaseline='middle';
+  S.pans.forEach(p=>{if(p.pts.length<3)return;const c=toScr(centroid(p.pts));
+    if(p.slope>0){const f=eaveFrame(p.pts,p.eave);const L=13;ctx.strokeStyle='#fff';ctx.fillStyle='#fff';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(c.x-f.d.x*L,c.y-f.d.y*L-14);ctx.lineTo(c.x+f.d.x*L,c.y+f.d.y*L-14);ctx.stroke();
+      const tip={x:c.x+f.d.x*L,y:c.y+f.d.y*L-14};ctx.beginPath();ctx.moveTo(tip.x+f.d.x*4,tip.y+f.d.y*4);ctx.lineTo(tip.x-f.d.x*4+f.d.y*5,tip.y-f.d.y*4-f.d.x*5);ctx.lineTo(tip.x-f.d.x*4-f.d.y*5,tip.y-f.d.y*4+f.d.x*5);ctx.closePath();ctx.fill();}
+    const txt=p.name+(S.mpp?' · '+activeCount(p):'');const tw=ctx.measureText(txt).width;
+    ctx.fillStyle='rgba(10,14,13,.78)';roundRect(c.x-tw/2-7,c.y+2,tw+14,20,6);ctx.fill();ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(txt,c.x,c.y+12);});
+  if(it&&S.mpp&&S.mode==='select'){ctx.font='600 11px Figtree, system-ui, sans-serif';it.pts.forEach((a,i)=>{const b=it.pts[(i+1)%it.pts.length];const Lm=len(sub(b,a))*S.mpp;if(Lm<0.3)return;
+    const m=toScr({x:(a.x+b.x)/2,y:(a.y+b.y)/2});const t=nf(Lm,2)+' m';const tw=ctx.measureText(t).width;ctx.fillStyle='rgba(255,212,59,.95)';roundRect(m.x-tw/2-5,m.y-9,tw+10,18,5);ctx.fill();ctx.fillStyle='#111';ctx.textAlign='center';ctx.fillText(t,m.x,m.y);});}
+  if(S.snap&&(S.mode==='pan'||S.mode==='obstacle'||S.mode==='calib'||S.snap.drag)){const s=toScr(S.snap);ctx.beginPath();if(S.snap.kind==='v')ctx.arc(s.x,s.y,8,0,7);else ctx.rect(s.x-6,s.y-6,12,12);ctx.lineWidth=2;ctx.strokeStyle='#00e0ff';ctx.stroke();}
+  ctx.textAlign='start';
+}
+function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+/* ---------- accroche (snap) ---------- */
+function allPoints(){const a=[];S.pans.forEach(p=>a.push(...p.pts));S.obstacles.forEach(o=>a.push(...o.pts));a.push(...S.draft);return a;}
+function allEdges(){const e=[];[...S.pans,...S.obstacles].forEach(p=>p.pts.forEach((a,i)=>e.push([a,p.pts[(i+1)%p.pts.length]])));return e;}
+function snapPoint(sp,excl,ref,shift){
+  const ip=toImg(sp);
+  if(shift&&ref){const base=S.draft.length>=2?Math.atan2(S.draft[1].y-S.draft[0].y,S.draft[1].x-S.draft[0].x):0;
+    const a=Math.atan2(ip.y-ref.y,ip.x-ref.x),st=Math.PI/4,aa=base+Math.round((a-base)/st)*st;const L=Math.hypot(ip.x-ref.x,ip.y-ref.y)*Math.cos(a-aa);
+    S.snap=null;return{x:ref.x+Math.cos(aa)*L,y:ref.y+Math.sin(aa)*L};}
+  let best=null,bd=11/S.view.s;
+  allPoints().forEach(p=>{if(excl&&excl.has(p))return;const d=Math.hypot(p.x-ip.x,p.y-ip.y);if(d<bd){bd=d;best=p;}});
+  if(best){S.snap={x:best.x,y:best.y,kind:'v'};return{x:best.x,y:best.y};}
+  let be=null;bd=7/S.view.s;
+  allEdges().forEach(([a,b])=>{if(excl&&(excl.has(a)||excl.has(b)))return;const r=distPtSeg(ip,a,b);if(r.d<bd){bd=r.d;be=r.q;}});
+  if(be){S.snap={x:be.x,y:be.y,kind:'e'};return{x:be.x,y:be.y};}
+  S.snap=null;return ip;
+}
+function hitVertex(sp){const it=selItem();if(!it)return null;const tol=10;
+  for(const q of it.pts){const s=toScr(q);if(Math.hypot(s.x-sp.x,s.y-sp.y)<tol){const refs=[];[...S.pans,...S.obstacles].forEach(o=>o.pts.forEach(p=>{if(Math.hypot(p.x-q.x,p.y-q.y)<0.75)refs.push(p);}));return{refs};}}
+  return null;}
+function panelAt(ip){if(!S.mpp)return null;const pt={x:ip.x*S.mpp,y:ip.y*S.mpp};
+  for(const p of S.pans){const L=S.layouts[p.id];if(!L)continue;for(const pn of L.panels)if(pip(pt,pn.plan))return{pan:p,key:pn.key};}return null;}
+
+/* ---------- interactions ---------- */
+let drag=null,spaceDown=false;const touches=new Map();
+const spOf=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('pointerdown',e=>{
+  if(!S.img)return;cv.setPointerCapture(e.pointerId);const sp=spOf(e);touches.set(e.pointerId,sp);
+  if(touches.size===2){const [a,b]=[...touches.values()];drag={type:'pinch',d:Math.hypot(a.x-b.x,a.y-b.y),cx:(a.x+b.x)/2,cy:(a.y+b.y)/2};return;}
+  if(touches.size>2)return;
+  if(e.button===1||e.button===2||spaceDown){drag={type:'view',sx:sp.x,sy:sp.y,ox:S.view.ox,oy:S.view.oy};return;}
+  if(e.button!==0)return;
+  if(S.mode==='select'&&!S.sub){const hv=hitVertex(sp);if(hv){drag={type:'vertex',refs:hv.refs,moved:false};return;}}
+  drag={type:'maybe',sx:sp.x,sy:sp.y,ox:S.view.ox,oy:S.view.oy};
+});
+cv.addEventListener('pointermove',e=>{
+  const sp=spOf(e);if(touches.has(e.pointerId))touches.set(e.pointerId,sp);
+  if(drag&&drag.type==='pinch'){if(touches.size!==2)return;const [a,b]=[...touches.values()];const d=Math.hypot(a.x-b.x,a.y-b.y),cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;
+    zoomAt({x:cx,y:cy},d/(drag.d||d));S.view.ox+=cx-drag.cx;S.view.oy+=cy-drag.cy;drag.d=d;drag.cx=cx;drag.cy=cy;draw();return;}
+  if(drag&&drag.type==='dead')return;
+  if(drag&&(drag.type==='view'||drag.type==='maybe')){const dx=sp.x-drag.sx,dy=sp.y-drag.sy;if(drag.type==='maybe'&&Math.hypot(dx,dy)>5)drag.type='view';
+    if(drag.type==='view'){S.view.ox=drag.ox+dx;S.view.oy=drag.oy+dy;draw();}return;}
+  if(drag&&drag.type==='vertex'){if(!drag.moved){snapshot();drag.moved=true;}const p=snapPoint(sp,new Set(drag.refs),null,false);if(S.snap)S.snap.drag=true;
+    drag.refs.forEach(r=>{r.x=p.x;r.y=p.y;});recalc();draw();return;}
+  S.shift=e.shiftKey;
+  if(S.mode==='pan'||S.mode==='obstacle'||S.mode==='calib'){
+    const ref=S.mode==='calib'?S.calibDraft[S.calibDraft.length-1]:S.draft[S.draft.length-1];
+    S.hover=snapPoint(sp,null,(S.mode==='calib'&&S.calibDraft.length===2)?null:ref,e.shiftKey);showMeasure(sp,ref);}
+  else{S.hover=null;S.snap=null;$('measure').hidden=true;}
+  draw();
+});
+function endPtr(e){touches.delete(e.pointerId);if(!drag)return;
+  if(drag.type==='pinch'||drag.type==='dead'){drag=touches.size?{type:'dead'}:null;return;}
+  const d=drag;drag=null;
+  if(d.type==='maybe'&&e.type==='pointerup')click(spOf(e),e.shiftKey);
+  if(d.type==='vertex'&&d.moved){S.snap=null;changed();}}
+cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
+cv.addEventListener('pointerleave',()=>{if(!drag){S.hover=null;S.snap=null;$('measure').hidden=true;draw();}});
+cv.addEventListener('wheel',e=>{e.preventDefault();zoomAt(spOf(e),Math.exp(-e.deltaY*0.0015));draw();},{passive:false});
+
+function showMeasure(sp,ref){const m=$('measure');if(!ref||!S.hover||!S.mpp||(S.mode==='calib'&&S.calibDraft.length===2)){m.hidden=true;return;}
+  const L=len(sub(S.hover,ref))*S.mpp;m.textContent=nf(L,2)+' m';m.style.left=(sp.x+14)+'px';m.style.top=(sp.y+14)+'px';m.hidden=false;}
+
+function click(sp,shift){
+  if(S.mode==='pan'||S.mode==='obstacle'){
+    if(S.draft.length>=3){const f=toScr(S.draft[0]);if(Math.hypot(f.x-sp.x,f.y-sp.y)<12){finishDraft();return;}}
+    S.draft.push(snapPoint(sp,null,S.draft[S.draft.length-1],shift));updateDraftButtons();draw();return;}
+  if(S.mode==='calib'){if(S.calibDraft.length>=2)S.calibDraft=[];S.calibDraft.push(snapPoint(sp,null,S.calibDraft[S.calibDraft.length-1],shift));
+    if(S.calibDraft.length===2){const dpx=len(sub(S.calibDraft[1],S.calibDraft[0]));if(dpx<5){S.calibDraft=[];toast('Trait trop court, recommencez.');}else showCalibForm();}
+    draw();setHint();return;}
+  const ip=toImg(sp);
+  if(S.mode==='panels'){const hit=panelAt(ip);if(hit){snapshot();const arr=S.forced.on?(hit.pan.on=hit.pan.on||[]):hit.pan.off;const i=arr.indexOf(hit.key);if(i>=0)arr.splice(i,1);else arr.push(hit.key);changed();renderForced();}return;}
+  if(S.sub==='eave'){const it=selItem();if(it&&S.sel.type==='pan'){const ed=nearestEdge(it.pts,ip);if(ed&&ed.d<16/S.view.s){snapshot();it.eave=ed.i;S.sub=null;changed();setHint();}}return;}
+  const o=[...S.obstacles].reverse().find(o=>pip(ip,o.pts));if(o){select('obs',o.id);return;}
+  const cands=S.pans.filter(p=>pip(ip,p.pts));
+  if(cands.length){const cur=S.sel&&S.sel.type==='pan'?cands.findIndex(p=>p.id===S.sel.id):-1;const p=cands[(cur+1)%cands.length];select('pan',p.id);return;}
+  select(null);
+}
+cv.addEventListener('dblclick',e=>{const sp=spOf(e);
+  if((S.mode==='pan'||S.mode==='obstacle')&&S.draft.length){finishDraft();return;}
+  if(S.mode!=='select'||!S.sel)return;const it=selItem();if(!it)return;const ip=toImg(sp),tol=10/S.view.s;
+  const vi=it.pts.findIndex(q=>Math.hypot(q.x-ip.x,q.y-ip.y)<tol);
+  if(vi>=0){if(it.pts.length>3){snapshot();it.pts.splice(vi,1);if(S.sel.type==='pan'){if(it.eave>vi)it.eave--;it.eave=it.eave%it.pts.length;}changed();}else toast('Un pan garde au moins 3 sommets.');return;}
+  const ed=nearestEdge(it.pts,ip);if(ed&&ed.d<tol){snapshot();it.pts.splice(ed.i+1,0,{x:ed.q.x,y:ed.q.y});if(S.sel.type==='pan'&&it.eave>ed.i)it.eave++;changed();}
+});
+function dedupe(P){const out=[];P.forEach(p=>{const l=out[out.length-1];if(!l||Math.hypot(l.x-p.x,l.y-p.y)>0.5)out.push({x:p.x,y:p.y});});
+  while(out.length>1&&Math.hypot(out[0].x-out[out.length-1].x,out[0].y-out[out.length-1].y)<=0.5)out.pop();return out;}
+function finishDraft(){const pts=dedupe(S.draft);S.draft=[];S.hover=null;updateDraftButtons();
+  if(pts.length<3){draw();toast('Il faut au moins 3 points.');return;}
+  snapshot();
+  if(S.mode==='obstacle'){const o={id:'o'+(S.seq++),pts,kind:S.obsKind||'velux'};S.obstacles.push(o);S.sel={type:'obs',id:o.id};S.lastObsAt=Date.now();}
+  else{const last=S.pans[S.pans.length-1];const p={id:'p'+(S.seq++),name:'Pan '+(S.pans.length+1),pts,slope:last?last.slope:35,eaveH:last?last.eaveH:5,pose:'portrait',off:[],color:S.colorIdx++};
+    p.eave=defaultEave(pts);S.pans.push(p);S.sel={type:'pan',id:p.id};}
+  changed();renderEditor();setHint();}
+
+window.addEventListener('keydown',e=>{
+  const tag=(e.target.tagName||'').toLowerCase();const typing=tag==='input'||tag==='select'||tag==='textarea';
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!typing){e.preventDefault();undo();return;}
+  if(typing||S.view3d)return;
+  if(e.key===' '&&tag!=='button'){spaceDown=true;e.preventDefault();return;}
+  if(e.key==='Escape'){if(S.draft.length||S.calibDraft.length){S.draft=[];S.calibDraft=[];$('calibForm').hidden=true;updateDraftButtons();}
+    else if(S.sub)S.sub=null;else if(S.mode!=='select')setMode('select');else select(null);draw();setHint();return;}
+  if(e.key==='Enter'&&S.draft.length){finishDraft();return;}
+  if(e.key==='Backspace'&&S.draft.length){e.preventDefault();S.draft.pop();updateDraftButtons();draw();return;}
+  if((e.key==='Delete'||e.key==='Backspace')&&S.sel&&S.mode==='select'){e.preventDefault();deleteSel();}
+});
+window.addEventListener('keyup',e=>{if(e.key===' ')spaceDown=false;});
+
+/* ---------- modes, aide ---------- */
+const HINTS={
+  select:'Cliquez un pan pour le régler. <b>Glissez un sommet</b> pour l\'ajuster (les sommets communs suivent). <b>Double-clic</b> sur un bord : ajoute un sommet ; sur un sommet : le supprime. Glissez le fond pour vous déplacer, molette pour zoomer.',
+  pan:'Cliquez les coins du pan un par un. Les points s\'accrochent aux sommets existants (cercle bleu). Cliquez le <b>1er point</b> ou <b>Entrée</b> pour fermer. <b>Maj</b> : angles à 45°. Retour arrière : effacer le dernier point.',
+  obstacle:'Choisissez le <b>type</b> dans la barre (fenêtre de toit en bleu, cheminée en rouge, autre en jaune), puis cliquez ses coins et fermez sur le 1er point ou avec <b>Entrée</b>.',
+  panels:'Cliquez un panneau pour le <b>retirer</b> ; cliquez un emplacement en pointillés pour le remettre.',
+  calib:'Cliquez les <b>deux extrémités</b> d\'une longueur connue (idéalement un long côté du toit), puis saisissez sa valeur dans le panneau « Échelle ».',
+  eave:'Cliquez le <b>bord bas</b> (égout, côté gouttière) du pan sélectionné. La flèche indique le sens de la pente.'
+};
+function setHint(){let h;if(S.view3d)h='<b>Glisser</b> : tourner · <b>Clic droit</b> ou <b>Maj + glisser</b> : déplacer · <b>Molette</b> ou pincer : zoomer';
+  else h=S.sub==='eave'?HINTS.eave:HINTS[S.mode];
+  if(!S.view3d&&S.forced.on&&!S.forced.placed)h='<b>Puissance imposée</b> : dessinez tous les pans, puis cliquez « Poser les panneaux ». '+h;
+  if(!S.view3d&&!S.mpp&&S.mode!=='calib')h='<b>Échelle non définie</b> : les panneaux apparaîtront après calibration. '+h;$('hint').innerHTML=h;}
+function setMode(m){S.mode=m;S.sub=null;S.draft=[];S.hover=null;S.snap=null;if(m!=='calib'){S.calibDraft=[];$('calibForm').hidden=true;}else{S.calibDraft=[];}
+  document.querySelectorAll('#modes .tb').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));
+  $('obsKindGroup').hidden=m!=='obstacle';renderKindBtns();
+  cv.style.cursor=(m==='select'||m==='panels')?'default':'crosshair';$('measure').hidden=true;updateDraftButtons();setHint();draw();}
+function updateDraftButtons(){const d=S.draft.length>0;$('finishBtn').hidden=!(d&&S.draft.length>=3);$('cancelDraftBtn').hidden=!d;}
+document.querySelectorAll('#modes .tb').forEach(b=>b.addEventListener('click',()=>{if(S.view3d)show2d();setMode(b.dataset.mode);}));
+function renderKindBtns(){document.querySelectorAll('#obsKindGroup .tb').forEach(b=>b.classList.toggle('on',b.dataset.kind===(S.obsKind||'velux')));}
+document.querySelectorAll('#obsKindGroup .tb').forEach(b=>b.addEventListener('click',()=>{S.obsKind=b.dataset.kind;renderKindBtns();
+  const it=selItem();if(it&&S.sel.type==='obs'&&!S.draft.length&&Date.now()-(S.lastObsAt||0)<15000){snapshot();it.kind=S.obsKind;$('oKind').value=it.kind;changed();}}));
+$('finishBtn').addEventListener('click',finishDraft);
+$('cancelDraftBtn').addEventListener('click',()=>{S.draft=[];updateDraftButtons();draw();});
+$('undoBtn').addEventListener('click',undo);
+$('fitBtn').addEventListener('click',()=>{if(S.view3d)recenter3d();else fit();});
+
+/* ---------- échelle ---------- */
+function showCalibForm(){$('calibForm').hidden=false;const i=$('calibLen');i.value=S.calib?'':'';setTimeout(()=>i.focus(),30);}
+function applyCalib(){const L=parseFloat(String($('calibLen').value).replace(',','.'));if(!(L>0)){toast('Saisissez une longueur en mètres.');return;}
+  const [a,b]=S.calibDraft;if(!a||!b)return;snapshot();S.calib={a:{...a},b:{...b},len:L};S.mpp=L/len(sub(b,a));S.calibDraft=[];$('calibForm').hidden=true;
+  renderCalib();setMode('select');changed();toast('Échelle enregistrée');}
+$('calibOk').addEventListener('click',applyCalib);
+$('calibLen').addEventListener('keydown',e=>{if(e.key==='Enter')applyCalib();});
+function renderCalib(){const s=$('calibStatus');
+  if(S.mpp)s.innerHTML=`<span class="pill ok">Calibrée</span><span>1 pixel = ${nf(S.mpp*100,1)} cm</span>`+(S.calib?`<span class="small">réf. ${nf(S.calib.len,2)} m</span>`:'');
+  else s.innerHTML='<span class="pill warn">À définir</span><span class="small">Choisissez « Échelle » dans la barre d\'outils.</span>';}
+
+/* ---------- panneau latéral ---------- */
+function renderList(){const box=$('panList');
+  if(!S.pans.length){box.innerHTML='<p class="empty">Aucun pan. Choisissez « Tracer un pan » puis cliquez les coins d\'un versant sur la capture. Un toit en L se dessine en 4 à 6 pans.</p>';}
+  else box.innerHTML=S.pans.map(p=>{const on=S.sel&&S.sel.type==='pan'&&S.sel.id===p.id;const o=orientOf(p);const bad=S.mpp&&panJoins(p).some(j=>j.max>=0.05);
+    return `<button type="button" class="panrow${on?' on':''}" data-id="${p.id}"><i class="sw" style="background:${COLORS[p.color%COLORS.length]}"></i><span class="pn">${esc(p.name)}</span><span class="pm">${p.slope>0?o.short:'Plat'} · ${nf(p.slope)}°</span><span class="pc${bad?' bad':''}" ${bad?'title="Mal raccordé à un pan voisin"':''}>${S.mpp?activeCount(p)+' mod.'+(bad?' · écart':''):'–'}</span></button>`;}).join('');
+  const n=S.obstacles.length;$('obsInfo').textContent=n?`${n} obstacle${n>1?'s':''} (cliquez-en un sur le plan pour le modifier).`:'';}
+$('panList').addEventListener('click',e=>{const b=e.target.closest('.panrow');if(b){if(S.view3d)show2d();select('pan',b.dataset.id);}});
+function renderEditor(){const it=selItem();const isPan=it&&S.sel.type==='pan';$('panEditor').hidden=!isPan;$('obsEditor').hidden=!(it&&S.sel.type==='obs');
+  if(isPan){$('pPoseWrap').querySelector('label').textContent=S.forced.on?'Pose des modules (choisie automatiquement à la pose)':'Pose des modules';$('pName').value=it.name;$('pSlope').value=it.slope;$('pTilt').value=it.tilt??10;$('pEaveH').value=it.eaveH;$('pPose').value=it.pose;renderReadout();}
+  if(it&&S.sel.type==='obs')$('oKind').value=it.kind;}
+function renderReadout(){const it=selItem();if(!it||S.sel.type!=='pan')return;const o=orientOf(it);const L=S.layouts[it.id];const n=activeCount(it);
+  const fl=isFlat(it);$('pTiltWrap').hidden=!fl;$('pPoseWrap').hidden=fl;
+  if(fl){$('pRead').innerHTML=`<b>Toit plat</b> (pente ≤ 5°) : modules en <b>paysage</b>, inclinés à <b>${nf(it.tilt??10)}°</b>, <b>${equatorName()}</b>.`+
+    (S.mpp&&L?`<br>Espace entre rangées : <b>${nf(L.gapRow*100)} cm</b> (pas de ${nf(L.pitch,2)} m), sans ombre le ${south()?'21 juin':'21 déc.'} ${S.mod.shade==='noon'?'à midi':'de 10 h à 14 h'}.<br>Surface : <b>${nf(L.area,1)} m²</b> · <b>${n} modules</b> = <b>${nf(n*S.mod.wp/1000,2)} kWc</b>`:'');}
+  const orientTxt=it.slope>0?`${o.name} · ${nf(o.az)}° (azimut ${o.az-180>0?'+':''}${nf(o.az-180)}°)`:'Toit plat';
+  if(!fl)$('pRead').innerHTML=`Orientation : <b>${orientTxt}</b><br>Pente : <b>${nf(it.slope)}° soit ${nf(Math.tan(it.slope*Math.PI/180)*100)} %</b>`+
+    (S.mpp?`<br>Surface réelle : <b>${nf(L?L.area:0,1)} m²</b> · <b>${n} modules</b> = <b>${nf(n*S.mod.wp/1000,2)} kWc</b>`:'');
+  if(S.mpp&&n){const pp=panProd(it);$('pRead').innerHTML+=`<br>Production estimée : <b>${nf(Math.round(pp.year/10)*10)} kWh/an</b> (${nf(pp.spec)} kWh/kWc, ${pp.src==='pvgis'?'PVGIS':pp.src==='pending'?'PVGIS en cours…':'calcul interne'})`;}
+  const J=panJoins(it),jb=$('pJoins');
+  if(!S.mpp){jb.innerHTML='';$('pAlign').hidden=true;return;}
+  if(!J.length){jb.innerHTML='<span class="warn">Aucun raccord détecté : ce pan ne touche aucun autre pan. Pour les relier, accrochez ses sommets à ceux du pan voisin (cercle bleu en traçant).</span>';$('pAlign').hidden=true;return;}
+  let bad=false;jb.innerHTML=J.map(j=>{const ok=j.max<0.05;if(!ok)bad=true;const spread=Math.max(...j.diffs)-Math.min(...j.diffs);
+    return `Raccord avec <b>${esc(j.q.name)}</b> : `+(ok?'<span class="okc">aligné</span>':`<span class="warn">écart jusqu'à ${nf(j.max*100)} cm</span>`+(spread>0.05?' <span class="small">(l\'écart varie le long du raccord : vérifiez la pente ou l\'égout d\'un des deux pans)</span>':''));}).join('<br>');
+  $('pAlign').hidden=!bad;}
+function alignPan(){const it=selItem();if(!it||S.sel.type!=='pan')return;const J=panJoins(it);const all=[].concat(...J.map(j=>j.diffs));if(!all.length)return;
+  snapshot();const off=all.reduce((a,b)=>a+b,0)/all.length;it.eaveH=Math.max(0,Math.round((it.eaveH+off)*100)/100);$('pEaveH').value=it.eaveH;changed();
+  const J2=panJoins(it);const rest=Math.max(0,...J2.map(j=>j.max));toast(rest<0.05?'Hauteur alignée sur les pans voisins':`Hauteur ajustée, écart restant ${nf(rest*100)} cm : vérifiez la pente ou l'égout`);}
+function bindPan(id,fn,num){const el=$(id);el.addEventListener('focus',()=>snapshot());el.addEventListener('input',()=>{const it=selItem();if(!it||S.sel.type!=='pan')return;
+  let v=el.value;if(num){v=parseFloat(String(v).replace(',','.'));if(isNaN(v))return;}fn(it,v);changed();});}
+bindPan('pName',(p,v)=>p.name=v||'Pan');
+bindPan('pSlope',(p,v)=>{p.slope=clamp(v,0,75);p.off=[];},true);
+bindPan('pEaveH',(p,v)=>p.eaveH=clamp(v,0,40),true);
+bindPan('pTilt',(p,v)=>{p.tilt=clamp(v,0,35);p.off=[];},true);
+bindPan('pPose',(p,v)=>{p.pose=v;p.off=[];});
+$('pEave').addEventListener('click',()=>{if(S.view3d)show2d();if(S.mode!=='select')setMode('select');S.sub='eave';setHint();draw();});
+$('pReset').addEventListener('click',()=>{const it=selItem();if(!it)return;snapshot();it.off=[];changed();});
+$('pDel').addEventListener('click',deleteSel);
+$('pAlign').addEventListener('click',alignPan);
+$('shareBtn').addEventListener('click',()=>{const data=JSON.stringify({outil:'calepinage-frh',imgW:S.imgW,imgH:S.imgH,mpp:S.mpp,calib:S.calib,mod:S.mod,
+  pans:S.pans.map(p=>({name:p.name,slope:p.slope,eaveH:p.eaveH,eave:p.eave,pose:p.pose,pts:p.pts.map(q=>[Math.round(q.x*10)/10,Math.round(q.y*10)/10])})),
+  obstacles:S.obstacles.map(o=>({kind:o.kind,pts:o.pts.map(q=>[Math.round(q.x*10)/10,Math.round(q.y*10)/10])}))});const ta=$('copyArea');
+  const fallback=()=>{ta.hidden=false;ta.value=data;ta.focus();ta.select();toast('Texte sélectionné : Ctrl + C pour copier');};
+  try{navigator.clipboard.writeText(data).then(()=>{ta.hidden=true;toast('Projet copié : collez-le dans la conversation avec Claude');},fallback);}catch(e){fallback();}});
+$('oKind').addEventListener('change',()=>{const it=selItem();if(!it)return;snapshot();it.kind=$('oKind').value;changed();});
+$('oDel').addEventListener('click',deleteSel);
+
+function renderPresetLabel(){const m=S.mod,o=$('mPreset').querySelector(`option[value="${m.preset}"]`);if(o&&m.preset!=='custom'&&PRESETS[m.preset])o.textContent=`${PRESETS[m.preset].h} × ${PRESETS[m.preset].w} mm · ${nf(m.wp)} Wc`+(m.preset==='p2000'?' (FRH)':'');}
+function renderModule(){const m=S.mod;$('mSrc').value=m.src||'auto';$('mLoss').value=m.loss??14;$('mGps').value=m.gps||'';$('mSite').value=m.site??4;$('mGhi').value=m.ghi??1220;$('mPr').value=m.pr??80;renderPresetLabel();$('mPreset').value=m.preset;$('mH').value=m.h;$('mW').value=m.w;$('mWp').value=m.wp;$('mMargin').value=m.margin;$('mLat').value=m.lat??46;$('mShade').value=m.shade||'1014';$('mGap').value=m.gap;}
+$('mPreset').addEventListener('change',()=>{const k=$('mPreset').value;S.mod.preset=k;if(PRESETS[k])Object.assign(S.mod,PRESETS[k]);renderModule();S.pans.forEach(p=>p.off=[]);changed();});
+$('mShade').addEventListener('change',()=>{S.mod.shade=$('mShade').value;S.pans.forEach(p=>{if(isFlat(p))p.off=[];});changed();});
+function applyGps(){const raw=$('mGps').value.trim();const m=raw.match(/(-?\d+(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[.,]\d+)?)/);
+  const info=$('mGpsInfo');
+  if(!m){info.innerHTML='<span style="color:var(--danger)">Format non reconnu. Exemple : 14.6313, -61.0553 (latitude, longitude).</span>';return;}
+  const lat=parseFloat(m[1].replace(',','.')),lon=parseFloat(m[2].replace(',','.'));
+  if(!(Math.abs(lat)<=70&&Math.abs(lon)<=180)){info.innerHTML='<span style="color:var(--danger)">Coordonnées hors limites.</span>';return;}
+  const rad=x=>x*Math.PI/180;let bi=0,bd=Infinity;SITES.forEach((x,i)=>{const dl=rad(x[1]-lat),dn=rad(SITE_LON[i]-lon);const a=Math.sin(dl/2)**2+Math.cos(rad(lat))*Math.cos(rad(x[1]))*Math.sin(dn/2)**2;const d=2*6371*Math.asin(Math.sqrt(a));if(d<bd){bd=d;bi=i;}});
+  S.mod.gps=raw;S.mod.gpsLat=lat;S.mod.gpsLon=lon;S.mod.lat=Math.round(lat*100)/100;$('mLat').value=S.mod.lat;
+  if(bd<250){S.mod.site=bi;S.mod.ghi=SITES[bi][2];$('mSite').value=bi;$('mGhi').value=S.mod.ghi;
+    info.innerHTML=`Latitude ${nf(lat,2)}°, référence <b>${SITES[bi][0]}</b> (${nf(bd)} km). Pour un chiffre exact, reportez l'irradiation PVGIS de ce point.`;}
+  else info.innerHTML=`<span style="color:var(--danger)">Latitude ${nf(lat,2)}° appliquée, mais aucune référence à moins de 250 km : saisissez l'irradiation PVGIS de ce point.</span>`;
+  S.pans.forEach(p=>{if(isFlat(p))p.off=[];});changed();toast('Coordonnées appliquées');}
+$('mGpsOk').addEventListener('click',applyGps);$('mGps').addEventListener('keydown',e=>{if(e.key==='Enter')applyGps();});
+$('mSite').innerHTML=SITES.map((x,i)=>`<option value="${i}">${x[0]}</option>`).join('');
+$('mSite').addEventListener('change',()=>{const i=+$('mSite').value,x=SITES[i];S.mod.site=i;S.mod.gpsLat=null;S.mod.gpsLon=null;S.mod.gps='';$('mGps').value='';S.mod.lat=x[1];S.mod.ghi=x[2];$('mLat').value=x[1];$('mGhi').value=x[2];S.pans.forEach(p=>{if(isFlat(p))p.off=[];});changed();});
+$('mSrc').addEventListener('change',()=>{S.mod.src=$('mSrc').value;changed();renderPvStatus();});
+[['mLoss','loss'],['mGhi','ghi'],['mPr','pr'],['mLat','lat'],['mH','h'],['mW','w'],['mWp','wp'],['mMargin','margin'],['mGap','gap']].forEach(([id,k])=>$(id).addEventListener('input',()=>{const v=parseFloat(String($(id).value).replace(',','.'));if(isNaN(v))return;
+  S.mod[k]=v;if(k==='wp')renderPresetLabel();if(k==='h'||k==='w'){S.mod.preset='custom';$('mPreset').value='custom';}if(k!=='wp')S.pans.forEach(p=>p.off=[]);changed();}));
+
+/* ---------- puissance imposée ---------- */
+function panSpec(p){if(p.pts.length<3)return 0;const {tilt,gam}=panAngles(p);return specMonthly(tilt,gam).mon.reduce((a,b)=>a+b,0);}
+async function placeForced(){if(!S.mpp){toast('Définissez d\'abord l\'échelle.');return;}
+  if(usePvgis()){const ps=S.pans.filter(p=>p.pts.length>=3).map(p=>{const a=panAngles(p);return pvFetch(a.tilt,a.gam);});if(ps.length){toast('Interrogation de PVGIS…');await Promise.all(ps);}}
+  const target=parseFloat(String($('fTarget').value).replace(',','.'));if(!(target>0)){toast('Saisissez une puissance en kWc.');return;}
+  snapshot();S.forced.target=target;S.pans.forEach(p=>p.on=[]);
+  /* pose choisie automatiquement : sur chaque pan incliné, l'orientation des modules qui en loge le plus */
+  S.pans.forEach(p=>{if(p.pts.length<3||isFlat(p))return;const keep=p.pose;
+    p.pose='portrait';const nP=layoutPan(p).panels.length;p.pose='paysage';const nL=layoutPan(p).panels.length;
+    p.pose=nL>nP?'paysage':nP>nL?'portrait':keep;});
+  recalc();
+  const wp=S.mod.wp,N=Math.max(1,Math.floor(target*1000/wp+1e-9));
+  const ranked=S.pans.map(p=>({p,spec:panSpec(p),L:S.layouts[p.id]})).filter(x=>x.L&&x.L.panels.length).sort((a,b)=>b.spec-a.spec);
+  let left=N;const used=[];
+  ranked.forEach(({p,L})=>{if(left<=0)return;const k=Math.min(left,L.panels.length);left-=k;
+    /* rangée par rangée depuis l'égout (depuis le sud sur toit plat), chaque rangée centrée sur le même axe : bloc compact */
+    const rows={};L.panels.forEach(pn=>{const r=pn.v.toFixed(2);(rows[r]=rows[r]||[]).push(pn);});
+    const order=Object.keys(rows).map(Number).sort((a,b)=>L.flat&&!south()?b-a:a-b);
+    const first=rows[order[0].toFixed(2)];const cu=first.reduce((a,x)=>a+x.u,0)/first.length;let need=k;
+    order.forEach(r=>{if(need<=0)return;const row=rows[r.toFixed(2)].slice().sort((a,b)=>Math.abs(a.u-cu)-Math.abs(b.u-cu));row.slice(0,need).forEach(pn=>p.on.push(pn.key));need-=Math.min(need,row.length);});
+    used.push([p.name,k]);});
+  S.forced.placed=true;S.forced.last={N,placed:N-left,used};changed();renderForced();setHint();
+  if(left>0)toast(`Toiture insuffisante : ${N-left} modules posés sur ${N} demandés`);else toast(`${N} modules posés`);}
+function renderForced(){const f=S.forced;$('fOn').checked=!!f.on;$('fBox').hidden=!f.on;$('fTarget').value=f.target??6;if(!f.on){$('fInfo').innerHTML='';return;}
+  const wp=S.mod.wp,t=parseFloat(String($('fTarget').value).replace(',','.'))||0,N=Math.floor(t*1000/wp+1e-9);
+  let cap=0;S.pans.forEach(p=>{const L=S.layouts[p.id];if(L)cap+=L.panels.length;});
+  const ranked=S.pans.filter(p=>p.pts.length>=3).map(p=>({p,spec:panSpec(p)})).sort((a,b)=>b.spec-a.spec);
+  let h=`${N} modules de ${nf(wp)} Wc = <b>${nf(N*wp/1000,2)} kWc</b>`+(N*wp/1000<t-1e-9?` (arrondi en dessous de ${nf(t,2)} kWc)`:'')+`<br>Capacité maximale de la toiture : ${cap} modules = ${nf(cap*wp/1000,2)} kWc`;
+  if(ranked.length&&S.mpp)h+='<br>Ordre de remplissage : '+ranked.map(x=>`${esc(x.p.name)} (${nf(x.spec)} kWh/kWc, ${isFlat(x.p)?'paysage sur supports':x.p.pose})`).join(' › ')+(f.placed?'':'<br>La pose portrait ou paysage de chaque pan sera choisie automatiquement pour loger le plus de modules.');
+  if(f.placed){const n=totals().n;h+=`<br>Posés actuellement : <b>${n} modules = ${nf(n*wp/1000,2)} kWc</b>`;if(f.last&&n!==f.last.placed)h+=' <span class="warn">(la toiture ou la pose a changé : cliquez à nouveau « Poser les panneaux » pour recalculer)</span>';}
+  else h+='<br><span class="warn">Aucun panneau posé pour l\'instant.</span>';
+  $('fInfo').innerHTML=h;}
+$('fOn').addEventListener('change',()=>{snapshot();S.forced.on=$('fOn').checked;S.forced.placed=false;S.pans.forEach(p=>p.on=[]);changed();renderForced();setHint();});
+$('fTarget').addEventListener('input',()=>{const v=parseFloat(String($('fTarget').value).replace(',','.'));if(v>0)S.forced.target=v;renderForced();save();});
+$('fTarget').addEventListener('keydown',e=>{if(e.key==='Enter')placeForced();});
+$('fPlace').addEventListener('click',placeForced);
+function totals(){let n=0;S.pans.forEach(p=>n+=activeCount(p));return{n,kwc:n*S.mod.wp/1000,area:n*S.mod.w*S.mod.h/1e6};}
+function renderSummary(){if(!S.mpp){['tN','tKwc','tArea','tProd'].forEach(i=>$(i).textContent='–');$('prodWrap').hidden=true;return;}
+  const t=totals();$('tN').textContent=t.n;$('tKwc').textContent=nf(t.kwc,2)+' kWc';$('tArea').textContent=nf(t.area,1)+' m²';
+  const P=S.pans.map(p=>({p,r:panProd(p)})).filter(x=>x.r.kwc>0);const mon=new Array(12).fill(0);let year=0;P.forEach(x=>{x.r.mon.forEach((v,i)=>mon[i]+=v);year+=x.r.year;});
+  $('tProd').textContent=year?nf(Math.round(year/10)*10)+' kWh':'–';$('prodWrap').hidden=!year;if(!year)return;
+  $('prodRows').innerHTML=P.map(x=>`<tr><td>${esc(x.p.name)}</td><td>${nf(x.r.kwc,2)}</td><td>${nf(Math.round(x.r.year/10)*10)}</td><td>${nf(x.r.spec)}</td></tr>`).join('')+
+    `<tr class="sumrow"><td>Total</td><td>${nf(t.kwc,2)}</td><td>${nf(Math.round(year/10)*10)}</td><td>${nf(t.kwc?year/t.kwc:0)}</td></tr>`;
+  renderProdChart(mon);}
+function niceStep(mx){const raw=mx/3,p=Math.pow(10,Math.floor(Math.log10(raw||1)));const q=raw/p;return(q<=1?1:q<=2?2:q<=5?5:10)*p;}
+function renderProdChart(mon){const W=320,H=132,L=36,R=4,T=10,B=18;const mx=Math.max(...mon)||1,st=niceStep(mx),top=Math.ceil(mx/st)*st;const bw=(W-L-R)/12,ih=H-T-B;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Production mensuelle estimée, de ${nf(Math.round(Math.min(...mon)))} à ${nf(Math.round(mx))} kWh">`;
+  for(let v=0;v<=top+1e-9;v+=st){const y=T+(1-v/top)*ih;s+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" class="gl"/><text x="${L-5}" y="${y+3}" text-anchor="end" class="ax">${nf(v)}</text>`;}
+  mon.forEach((v,i)=>{const h=v/top*ih,x=L+i*bw+2,w=bw-4,y=T+ih-h,r=Math.min(3,h/2,w/2);
+    s+=`<path class="bar" data-i="${i}" d="M${x},${T+ih} L${x},${y+r} Q${x},${y} ${x+r},${y} L${x+w-r},${y} Q${x+w},${y} ${x+w},${y+r} L${x+w},${T+ih} Z"/>`;
+    s+=`<text x="${x+w/2}" y="${H-5}" text-anchor="middle" class="ax">${MOIS[i][0]}</text><rect class="hit" data-i="${i}" x="${L+i*bw}" y="${T}" width="${bw}" height="${ih+B}"/>`;});
+  $('prodChart').innerHTML=s+'</svg>';renderProdChart.mon=mon;renderProdChart.geo={W,H,L,bw,T,ih,top};}
+$('prodChart').addEventListener('pointermove',e=>{const r=e.target.closest('.hit');const tip=$('prodTip');$('prodChart').querySelectorAll('.bar').forEach(b=>b.classList.remove('hov'));
+  if(!r){tip.hidden=true;return;}const i=+r.dataset.i,mon=renderProdChart.mon,g=renderProdChart.geo;const svg=$('prodChart').firstChild.getBoundingClientRect(),wrap=$('prodChart').parentNode.getBoundingClientRect();
+  const k=svg.width/g.W;tip.textContent=`${MOIS[i]} : ${nf(Math.round(mon[i]))} kWh`;tip.style.left=(svg.left-wrap.left+(g.L+(i+.5)*g.bw)*k)+'px';tip.style.top=(svg.top-wrap.top+(g.T+g.ih-mon[i]/g.top*g.ih)*k-6)+'px';tip.hidden=false;
+  const b=$('prodChart').querySelector(`.bar[data-i="${i}"]`);if(b)b.classList.add('hov');});
+$('prodChart').addEventListener('pointerleave',()=>{$('prodTip').hidden=true;$('prodChart').querySelectorAll('.bar').forEach(b=>b.classList.remove('hov'));});
+function summaryText(){const t=totals(),m=S.mod;const lines=[`Calepinage FRH – ${new Date().toLocaleDateString('fr-FR')}`,
+  `Module : ${m.h} × ${m.w} mm, ${m.wp} Wc · marge de rive ${nf(m.margin)} cm · espacement ${nf(m.gap,1)} cm`,
+  `Total : ${t.n} modules · ${nf(t.kwc,2)} kWc · ${nf(t.area,1)} m² de capteurs`,
+  `Production estimée : ${nf(Math.round(S.pans.reduce((a,p)=>a+panProd(p).year,0)/10)*10)} kWh/an (${usePvgis()?'PVGIS, '+(pvCoords().gps?'point GPS '+nf(pvCoords().lat,4)+', '+nf(pvCoords().lon,4):(SITES[m.site]||SITES[4])[0])+', pertes '+nf(m.loss??14)+' %':'calcul interne, '+(SITES[m.site]||SITES[4])[0]+', irradiation '+nf(m.ghi)+' kWh/m²/an, rendement '+nf(m.pr)+' %'})`,''];
+  S.pans.forEach(p=>{const o=orientOf(p),n=activeCount(p),L=S.layouts[p.id];
+    if(isFlat(p)&&L){lines.push(`${p.name} : toit plat, ${nf(L.area,1)} m², ${n} modules paysage inclinés à ${nf(L.tilt)}° ${equatorName()}, rangées espacées de ${nf(L.gapRow*100)} cm = ${nf(n*m.wp/1000,2)} kWc · ${nf(Math.round(panProd(p).year/10)*10)} kWh/an`);return;}
+    lines.push(`${p.name} : ${p.slope>0?o.name+' (azimut '+(o.az-180>0?'+':'')+nf(o.az-180)+'°)':'toit plat'}, pente ${nf(p.slope)}°, ${nf(L?L.area:0,1)} m², ${n} modules ${p.pose} = ${nf(n*m.wp/1000,2)} kWc · ${nf(Math.round(panProd(p).year/10)*10)} kWh/an`);});
+  if(S.obstacles.length)lines.push('',`Obstacles : ${S.obstacles.length}`);return lines.join('\n');}
+$('copyBtn').addEventListener('click',()=>{const txt=summaryText();const ta=$('copyArea');
+  const fallback=()=>{ta.hidden=false;ta.value=txt;ta.focus();ta.select();toast('Texte sélectionné : Ctrl + C pour copier');};
+  try{navigator.clipboard.writeText(txt).then(()=>{ta.hidden=true;toast('Récapitulatif copié');},fallback);}catch(e){fallback();}});
+let clearArm=0;
+$('clearBtn').addEventListener('click',()=>{const b=$('clearBtn');if(Date.now()-clearArm>3000){clearArm=Date.now();b.textContent='Confirmer l\'effacement';setTimeout(()=>b.textContent='Effacer le dessin',3000);return;}
+  snapshot();S.pans=[];S.obstacles=[];S.sel=null;b.textContent='Effacer le dessin';clearArm=0;changed();renderEditor();toast('Dessin effacé (Annuler pour revenir)');});
+
+/* ---------- images ---------- */
+function setImage(url,isEx,cb){const im=new Image();im.onload=()=>{S.img=im;S.imgURL=url;S.imgW=im.naturalWidth;S.imgH=im.naturalHeight;S.isExample=isEx;T3.dirty=true;
+  $('imgInfo').innerHTML=isEx?'<span class="pill">Exemple</span> Maison en L avec garage, pour essayer l\'outil.':`Capture chargée · ${S.imgW} × ${S.imgH} px`;cb&&cb();};im.src=url;}
+function loadFile(file){if(!file||!/^image\//.test(file.type)){toast('Choisissez une image (PNG ou JPG).');return;}
+  const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,2400/Math.max(im.width,im.height));const c=document.createElement('canvas');
+    c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    setImage(c.toDataURL('image/jpeg',0.9),false,()=>{hist.length=0;S.pans=[];S.obstacles=[];S.calib=null;S.mpp=null;S.sel=null;S.seq=1;S.colorIdx=0;
+      if(S.view3d)show2d();fit();setMode('calib');renderCalib();renderEditor();changed();toast('Étape suivante : tracez une longueur connue');});};im.src=fr.result;};fr.readAsDataURL(file);}
+$('fileIn').addEventListener('change',e=>{loadFile(e.target.files[0]);e.target.value='';});
+['dragenter','dragover'].forEach(t=>stage.addEventListener(t,e=>{e.preventDefault();$('dropzone').hidden=false;}));
+['dragleave','drop'].forEach(t=>stage.addEventListener(t,e=>{e.preventDefault();$('dropzone').hidden=true;}));
+stage.addEventListener('drop',e=>{const f=e.dataTransfer&&e.dataTransfer.files[0];if(f)loadFile(f);});
+document.addEventListener('paste',e=>{const it=[...(e.clipboardData?.items||[])].find(i=>i.type.startsWith('image/'));if(it)loadFile(it.getAsFile());});
+
+/* exemple : vue aérienne synthétique d'une maison en L avec garage (20 px = 1 m) */
+const EX_K=20;
+const EX_PANS=[
+  {name:'Nord',pts:[[6,8],[26,8],[26,12],[6,12]],eave:0,slope:35,eaveH:5},
+  {name:'Sud-ouest',pts:[[6,12],[18,12],[14,16],[6,16]],eave:2,slope:35,eaveH:5},
+  {name:'Sud-est',pts:[[18,12],[26,12],[26,16],[22,16]],eave:2,slope:35,eaveH:5},
+  {name:'Aile ouest',pts:[[14,16],[18,12],[18,24],[14,24]],eave:3,slope:35,eaveH:5},
+  {name:'Aile est',pts:[[18,12],[22,16],[22,24],[18,24]],eave:1,slope:35,eaveH:5},
+  {name:'Garage (toit plat)',pts:[[30,10],[36,10],[36,16],[30,16]],eave:2,slope:2,eaveH:3}];
+const EX_OBS=[{pts:[[10,9.4],[11,9.4],[11,10.4],[10,10.4]],kind:'chem'},{pts:[[8.6,13.3],[9.8,13.3],[9.8,14.7],[8.6,14.7]],kind:'velux'}];
+function makeExample(){const k=EX_K,W=42*k,H=30*k,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
+  let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  g.fillStyle='#5d7743';g.fillRect(0,0,W,H);
+  for(let i=0;i<9000;i++){const s=2+rnd()*5;g.fillStyle=`hsl(${80+rnd()*30},${25+rnd()*20}%,${24+rnd()*14}%)`;g.globalAlpha=.5;g.fillRect(rnd()*W,rnd()*H,s,s);}g.globalAlpha=1;
+  const R=(x0,y0,x1,y1,col)=>{g.fillStyle=col;g.fillRect(x0*k,y0*k,(x1-x0)*k,(y1-y0)*k);};
+  R(0,27.2,42,30,'#6b6a66');R(30,16,36,27.2,'#9a958c');R(6,16,13,19.5,'#c7bca9');R(22.5,19,29.5,23,'#3f7fa6');R(22.8,19.3,29.2,22.7,'#5aa6c9');
+  for(let i=0;i<7;i++){g.strokeStyle='rgba(255,255,255,.18)';g.beginPath();g.moveTo(0,(27.2+i*0.4)*k);g.lineTo(W,(27.2+i*0.4)*k);g.stroke();}
+  [[3,4,3.2],[39,5,3.6],[4,24,2.8],[38.5,22,2.4],[27.5,4,2]].forEach(([x,y,r])=>{g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.arc((x+0.8)*k,(y+1)*k,r*k,0,7);g.fill();
+    const gr=g.createRadialGradient((x-r*.3)*k,(y-r*.3)*k,r*.1*k,x*k,y*k,r*k);gr.addColorStop(0,'#5f8a3c');gr.addColorStop(1,'#2d4a22');g.fillStyle=gr;g.beginPath();g.arc(x*k,y*k,r*k,0,7);g.fill();});
+  const poly=(pts,dx=0,dy=0)=>{g.beginPath();pts.forEach(([x,y],i)=>i?g.lineTo((x+dx)*k,(y+dy)*k):g.moveTo((x+dx)*k,(y+dy)*k));g.closePath();};
+  g.fillStyle='rgba(0,0,0,.4)';EX_PANS.forEach(p=>{poly(p.pts,0.7,0.9);g.fill();});
+  const tone={N:'#8a4631',S:'#b9643f',E:'#c46d47',O:'#a4553a'};
+  EX_PANS.forEach(p=>{const P=p.pts.map(([x,y])=>({x,y}));const f=eaveFrame(P,p.eave);const garage=p.name.startsWith('Garage');
+    const dir=Math.abs(f.d.x)>Math.abs(f.d.y)?(f.d.x>0?'E':'O'):(f.d.y>0?'S':'N');
+    g.save();poly(p.pts);g.fillStyle=garage?'#6f7275':tone[dir];g.fill();g.clip();
+    g.strokeStyle=garage?'rgba(255,255,255,.12)':'rgba(40,15,8,.35)';g.lineWidth=1.2;
+    for(let s=0;s<14;s+=garage?0.6:0.33){const a={x:f.A.x-f.d.x*s,y:f.A.y-f.d.y*s};g.beginPath();g.moveTo((a.x-f.u.x*40)*k,(a.y-f.u.y*40)*k);g.lineTo((a.x+f.u.x*40)*k,(a.y+f.u.y*40)*k);g.stroke();}
+    for(let i=0;i<500;i++){g.fillStyle=`rgba(0,0,0,${rnd()*.12})`;g.fillRect(rnd()*W,rnd()*H,3,3);}
+    g.restore();});
+  g.strokeStyle='rgba(235,220,200,.7)';g.lineWidth=2.5;[[[6,12],[26,12]],[[18,12],[18,24]],[[14,16],[18,12]],[[22,16],[18,12]]].forEach(([a,b])=>{g.beginPath();g.moveTo(a[0]*k,a[1]*k);g.lineTo(b[0]*k,b[1]*k);g.stroke();});
+  poly(EX_OBS[0].pts);g.fillStyle='#8c847a';g.fill();g.fillStyle='#3a3530';g.fillRect(10.25*k,9.65*k,0.5*k,0.5*k);poly(EX_OBS[0].pts,0.4,0.5);g.fillStyle='rgba(0,0,0,.3)';g.fill();
+  poly(EX_OBS[1].pts);g.fillStyle='#2b3542';g.fill();g.strokeStyle='#9aa3ad';g.lineWidth=2;g.stroke();
+  return c.toDataURL('image/jpeg',0.9);}
+function loadExample(){setImage(makeExample(),true,()=>{hist.length=0;S.seq=1;S.colorIdx=0;
+  S.pans=EX_PANS.map(p=>({id:'p'+(S.seq++),name:p.name,pts:p.pts.map(([x,y])=>({x:x*EX_K,y:y*EX_K})),eave:p.eave,slope:p.slope,eaveH:p.eaveH,pose:'portrait',off:[],color:S.colorIdx++}));
+  S.obstacles=EX_OBS.map(o=>({id:'o'+(S.seq++),pts:o.pts.map(([x,y])=>({x:x*EX_K,y:y*EX_K})),kind:o.kind}));
+  S.calib={a:{x:6*EX_K,y:8*EX_K},b:{x:26*EX_K,y:8*EX_K},len:20};S.mpp=0.05;S.sel=null;
+  if(S.view3d)show2d();fit();setMode('select');renderCalib();renderEditor();changed();});}
+$('exampleBtn').addEventListener('click',loadExample);
+
+/* ---------- vue 3D ---------- */
+const T3={ready:false,dirty:true};
+function init3d(){if(T3.ready)return true;
+  if(!window.THREE){$('msg3d').textContent='La vue 3D n\'a pas pu se charger. Vérifiez votre connexion puis rechargez la page.';$('msg3d').hidden=false;return false;}
+  const el=$('three');const r=new THREE.WebGLRenderer({antialias:true});r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));el.appendChild(r.domElement);
+  const scene=new THREE.Scene();const cam=new THREE.PerspectiveCamera(42,1,0.1,3000);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x5a5a4a,0.7));const sun=new THREE.DirectionalLight(0xffffff,0.8);sun.position.set(-15,35,28);scene.add(sun);
+  const group=new THREE.Group();scene.add(group);
+  Object.assign(T3,{ready:true,r,scene,cam,group,el,orb:{theta:-0.6,phi:0.95,r:40,target:new THREE.Vector3()}});
+  const c=r.domElement;const pts=new Map();let pinch=null;
+  c.addEventListener('contextmenu',e=>e.preventDefault());
+  c.addEventListener('pointerdown',e=>{c.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY,b:e.button});
+    if(pts.size===2){const [a,b]=[...pts.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),cx:(a.x+b.x)/2,cy:(a.y+b.y)/2};}});
+  c.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;const o=T3.orb;
+    if(pts.size===2&&pinch){const [a,b]=[...pts.values()];const d=Math.hypot(a.x-b.x,a.y-b.y),cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;o.r=clamp(o.r*pinch.d/(d||1),3,600);panBy(cx-pinch.cx,cy-pinch.cy);pinch={d,cx,cy};}
+    else if(pts.size===1){if(p.b===1||p.b===2||e.shiftKey)panBy(dx,dy);else{o.theta-=dx*0.008;o.phi=clamp(o.phi-dy*0.008,0.05,1.52);}}
+    render3d();});
+  const up=e=>{pts.delete(e.pointerId);if(pts.size<2)pinch=null;};c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
+  c.addEventListener('wheel',e=>{e.preventDefault();T3.orb.r=clamp(T3.orb.r*Math.exp(e.deltaY*0.0012),3,600);render3d();},{passive:false});
+  new ResizeObserver(size3d).observe(el);return true;}
+function panBy(dx,dy){const o=T3.orb,k=o.r*0.0016;const right=new THREE.Vector3(Math.cos(o.theta),0,-Math.sin(o.theta)),fwd=new THREE.Vector3(-Math.sin(o.theta),0,-Math.cos(o.theta));
+  o.target.addScaledVector(right,-dx*k).addScaledVector(fwd,dy*k);}
+function size3d(){if(!T3.ready)return;const w=T3.el.clientWidth,h=T3.el.clientHeight;if(!w||!h)return;T3.r.setSize(w,h);T3.cam.aspect=w/h;T3.cam.updateProjectionMatrix();render3d();}
+function render3d(){if(!T3.ready)return;const o=T3.orb,sp=Math.sin(o.phi);
+  T3.cam.position.set(o.target.x+o.r*sp*Math.sin(o.theta),o.target.y+o.r*Math.cos(o.phi),o.target.z+o.r*sp*Math.cos(o.theta));T3.cam.lookAt(o.target);T3.r.render(T3.scene,T3.cam);}
+function recenter3d(){if(!T3.ready)return;const b=T3.bbox;if(!b)return;T3.orb.target.set((b.x0+b.x1)/2,(b.y1)*0.4,(b.z0+b.z1)/2);T3.orb.r=Math.max(b.x1-b.x0,b.z1-b.z0,8)*1.7+6;render3d();}
+function sharedEdge(p,i){const a=p.pts[i],b=p.pts[(i+1)%p.pts.length],m={x:(a.x+b.x)/2,y:(a.y+b.y)/2},tol=0.3/S.mpp;
+  return S.pans.some(q=>q!==p&&q.pts.some((c,j)=>distPtSeg(m,c,q.pts[(j+1)%q.pts.length]).d<tol));}
+function build3d(){const g=T3.group;
+  while(g.children.length){const c=g.children.pop();if(c.geometry)c.geometry.dispose();if(c.material){if(c.material.map)c.material.map.dispose();c.material.dispose();}}
+  T3.scene.background=new THREE.Color(cssVar('--stage')||'#dce3e0');
+  if(!S.mpp){$('msg3d').textContent='Définissez d\'abord l\'échelle (étape 2) pour afficher la toiture en 3D.';$('msg3d').hidden=false;return;}
+  $('msg3d').hidden=!!S.pans.length;if(!S.pans.length)$('msg3d').textContent='Tracez au moins un pan pour voir la 3D.';
+  const m=S.mpp;
+  if(S.img){const tex=new THREE.Texture(S.img);tex.needsUpdate=true;tex.minFilter=THREE.LinearFilter;tex.generateMipmaps=false;
+    const mesh=new THREE.Mesh(new THREE.PlaneGeometry(S.imgW*m,S.imgH*m),new THREE.MeshBasicMaterial({map:tex}));mesh.rotation.x=-Math.PI/2;mesh.position.set(S.imgW*m/2,0,S.imgH*m/2);g.add(mesh);}
+  const mode=S.roofMode||'photo';const matOpts={side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1};
+  let roofTex=null;if(mode==='photo'&&S.img){roofTex=new THREE.Texture(S.img);roofTex.needsUpdate=true;roofTex.minFilter=THREE.LinearFilter;roofTex.generateMipmaps=false;}
+  const plainMat=new THREE.MeshLambertMaterial(Object.assign({color:0xb0593c},matOpts));
+  const photoMat=roofTex?new THREE.MeshLambertMaterial(Object.assign({map:roofTex,color:0xffffff},matOpts)):null;
+  let imgData=null;if(mode==='moyenne'&&S.img){try{const c=document.createElement('canvas');c.width=S.imgW;c.height=S.imgH;const cx=c.getContext('2d');cx.drawImage(S.img,0,0);imgData=cx.getImageData(0,0,S.imgW,S.imgH);}catch(e){}}
+  const avgMat=p=>{if(!imgData)return plainMat;let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;p.pts.forEach(q=>{x0=Math.min(x0,q.x);y0=Math.min(y0,q.y);x1=Math.max(x1,q.x);y1=Math.max(y1,q.y);});
+    x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(S.imgW-1,Math.ceil(x1));y1=Math.min(S.imgH-1,Math.ceil(y1));
+    const step=Math.max(1,Math.round(Math.sqrt((x1-x0)*(y1-y0)/4000)));let r=0,gg=0,b=0,n=0;
+    for(let y=y0;y<=y1;y+=step)for(let x=x0;x<=x1;x+=step){if(!pip({x:x+.5,y:y+.5},p.pts))continue;if(S.obstacles.some(o=>pip({x,y},o.pts)))continue;const k=(y*S.imgW+x)*4;r+=imgData.data[k];gg+=imgData.data[k+1];b+=imgData.data[k+2];n++;}
+    if(!n)return plainMat;const col=new THREE.Color(r/n/255,gg/n/255,b/n/255);const hsl={};col.getHSL(hsl);col.setHSL(hsl.h,Math.min(1,hsl.s*1.05),hsl.l);
+    return new THREE.MeshLambertMaterial(Object.assign({color:col},matOpts));};
+  const wallMat=new THREE.MeshLambertMaterial({color:0xece5d9,side:THREE.DoubleSide});
+  const edgeMat=new THREE.LineBasicMaterial({color:0x3b2a22});
+  const bb={x0:Infinity,x1:-Infinity,z0:Infinity,z1:-Infinity,y1:0};const ext=(x,y,z)=>{bb.x0=Math.min(bb.x0,x);bb.x1=Math.max(bb.x1,x);bb.z0=Math.min(bb.z0,z);bb.z1=Math.max(bb.z1,z);bb.y1=Math.max(bb.y1,y);};
+  const panelPos=[],panelLines=[],surfMap=new Map();
+  S.pans.forEach(p=>{if(p.pts.length<3)return;const F=frame(p);const hs=weldedHeights(p);
+    let tris=[];try{tris=THREE.ShapeUtils.triangulateShape(F.P.map(q=>new THREE.Vector2(q.x,q.y)),[]);}catch(e){}
+    const pos=[],uv=[],IW=S.imgW*m,IH=S.imgH*m;tris.forEach(t=>t.forEach(i=>{pos.push(F.P[i].x,hs[i],F.P[i].y);uv.push(F.P[i].x/IW,1-F.P[i].y/IH);}));
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.computeVertexNormals();
+    g.add(new THREE.Mesh(geo,mode==='photo'&&photoMat?photoMat:mode==='moyenne'?avgMat(p):plainMat));
+    const lp=[];F.P.forEach((q,i)=>{const j=(i+1)%F.P.length;lp.push(q.x,hs[i],q.y,F.P[j].x,hs[j],F.P[j].y);ext(q.x,hs[i],q.y);});
+    const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(lp,3));g.add(new THREE.LineSegments(lg,edgeMat));
+    const wp=[];F.P.forEach((a,i)=>{if(sharedEdge(p,i))return;const j=(i+1)%F.P.length,b=F.P[j],ha=hs[i],hb=hs[j];wp.push(a.x,ha,a.y,b.x,hb,b.y,b.x,0,b.y,a.x,ha,a.y,b.x,0,b.y,a.x,0,a.y);});
+    if(wp.length){const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(wp,3));wg.computeVertexNormals();g.add(new THREE.Mesh(wg,wallMat));}
+    /* hauteur prise sur la surface du toit réellement affichée (triangles soudés), pas sur le plan théorique */
+    const surfH=q=>{for(const t of tris){const a=F.P[t[0]],b=F.P[t[1]],c=F.P[t[2]];const den=(b.y-c.y)*(a.x-c.x)+(c.x-b.x)*(a.y-c.y);if(Math.abs(den)<1e-12)continue;
+        const w1=((b.y-c.y)*(q.x-c.x)+(c.x-b.x)*(q.y-c.y))/den,w2=((c.y-a.y)*(q.x-c.x)+(a.x-c.x)*(q.y-c.y))/den,w3=1-w1-w2;
+        if(w1>=-1e-6&&w2>=-1e-6&&w3>=-1e-6)return w1*hs[t[0]]+w2*hs[t[1]]+w3*hs[t[2]];}
+      let best=null,bd=Infinity;F.P.forEach((v,i)=>{const d=Math.hypot(v.x-q.x,v.y-q.y);if(d<bd){bd=d;best=i;}});return F.height(q)+(hs[best]-F.height(F.P[best]));};
+    surfMap.set(p,surfH);
+    const L=S.layouts[p.id];if(L)L.panels.forEach(pn=>{if(pn.off)return;
+      if(L.flat){const b=pn.plan.map(q=>surfH(q)+0.12);const c=pn.plan.map((q,i)=>[q.x,b[i]+((L.south?i>=2:i<2)?L.rise:0),q.y]);
+        panelPos.push(...c[0],...c[1],...c[2],...c[0],...c[2],...c[3]);for(let k=0;k<4;k++)panelLines.push(...c[k],...c[(k+1)%4]);
+        [0,1].forEach(i=>panelLines.push(...c[i],c[i][0],b[i]-0.12,c[i][2]));[2,3].forEach(i=>panelLines.push(...c[i],c[i][0],b[i]-0.12,c[i][2]));return;}
+      const ch=pn.plan.map(surfH);let bump=0;const q0=pn.plan[0],q1=pn.plan[1],q3=pn.plan[3];
+      for(let a=0;a<=2;a++)for(let b=0;b<=2;b++){const s=a/2,t=b/2;const q={x:q0.x+(q1.x-q0.x)*s+(q3.x-q0.x)*t,y:q0.y+(q1.y-q0.y)*s+(q3.y-q0.y)*t};
+        const bil=ch[0]*(1-s)*(1-t)+ch[1]*s*(1-t)+ch[2]*s*t+ch[3]*(1-s)*t;bump=Math.max(bump,surfH(q)-bil);}
+      const lift=0.05+Math.min(bump,0.3);
+      const c=pn.plan.map((q,i)=>[q.x,ch[i]+lift,q.y]);
+      panelPos.push(...c[0],...c[1],...c[2],...c[0],...c[2],...c[3]);for(let k=0;k<4;k++)panelLines.push(...c[k],...c[(k+1)%4]);});});
+  if(panelPos.length){const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.Float32BufferAttribute(panelPos,3));pg.computeVertexNormals();
+    g.add(new THREE.Mesh(pg,new THREE.MeshPhongMaterial({color:0x1a2a4a,specular:0x26344c,shininess:35,side:THREE.DoubleSide})));
+    const plg=new THREE.BufferGeometry();plg.setAttribute('position',new THREE.Float32BufferAttribute(panelLines,3));g.add(new THREE.LineSegments(plg,new THREE.LineBasicMaterial({color:0xc4cfdf})));}
+  S.obstacles.forEach(o=>{const P=o.pts.map(q=>({x:q.x*m,y:q.y*m}));const c=centroid(o.pts);let pan=[...S.pans].reverse().find(p=>pip(c,p.pts));
+    if(!pan){let bd=Infinity;S.pans.forEach(p=>{const e=nearestEdge(p.pts,c);if(e&&e.d<bd){bd=e.d;pan=p;}});if(bd*m>1.5)pan=null;}
+    const sf=pan?surfMap.get(pan):null;
+    const base=P.map(q=>sf?sf(q):0);const h=o.kind==='chem'?1.2:o.kind==='velux'?0.04:0.5;const mx=Math.max(...base);
+    const top=o.kind==='velux'?base.map(z=>z+h):P.map(()=>mx+h);const col=o.kind==='chem'?0x8a8078:o.kind==='velux'?0x2a3342:0x9aa0a6;
+    const pos=[];P.forEach((a,i)=>{const j=(i+1)%P.length,b=P[j];const b0=base[i]-0.1,b1=base[j]-0.1;pos.push(a.x,b0,a.y,b.x,b1,b.y,b.x,top[j],b.y,a.x,b0,a.y,b.x,top[j],b.y,a.x,top[i],a.y);});
+    let tris=[];try{tris=THREE.ShapeUtils.triangulateShape(P.map(q=>new THREE.Vector2(q.x,q.y)),[]);}catch(e){}tris.forEach(t=>t.forEach(i=>pos.push(P[i].x,top[i],P[i].y)));
+    const og=new THREE.BufferGeometry();og.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));og.computeVertexNormals();g.add(new THREE.Mesh(og,new THREE.MeshLambertMaterial({color:col,side:THREE.DoubleSide})));});
+  if(bb.x0===Infinity){bb.x0=0;bb.x1=S.imgW*m;bb.z0=0;bb.z1=S.imgH*m;}
+  const first=!T3.bbox;T3.bbox=bb;if(first||T3.recenterNext){recenter3d();T3.recenterNext=false;}}
+function show3d(){S.view3d=true;$('tab3d').classList.add('on');$('tab2d').classList.remove('on');$('tab3d').setAttribute('aria-selected','true');$('tab2d').setAttribute('aria-selected','false');
+  cv.hidden=true;$('north').hidden=true;$('measure').hidden=true;$('three').hidden=false;$('btn3d').hidden=false;
+  document.querySelectorAll('#modes .tb').forEach(b=>b.classList.remove('on'));$('finishBtn').hidden=true;$('cancelDraftBtn').hidden=true;setHint();
+  if(init3d()){if(T3.dirty){build3d();T3.dirty=false;}size3d();}}
+function show2d(){S.view3d=false;$('tab2d').classList.add('on');$('tab3d').classList.remove('on');$('tab2d').setAttribute('aria-selected','true');$('tab3d').setAttribute('aria-selected','false');
+  cv.hidden=false;$('north').hidden=false;$('three').hidden=true;$('btn3d').hidden=true;$('msg3d').hidden=true;
+  document.querySelectorAll('#modes .tb').forEach(b=>b.classList.toggle('on',b.dataset.mode===S.mode));resize();setHint();}
+$('tab3d').addEventListener('click',()=>{if(S.draft.length)finishDraft();show3d();});
+$('tab2d').addEventListener('click',show2d);
+$('recenter3d').addEventListener('click',recenter3d);
+$('roofMode').addEventListener('change',()=>{S.roofMode=$('roofMode').value;T3.dirty=true;show3d();save();});
+$('top3d').addEventListener('click',()=>{if(!T3.ready)return;T3.orb.phi=0.05;T3.orb.theta=0;render3d();});
+window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{T3.dirty=true;if(S.view3d)show3d();});
+
+/* ---------- démarrage ---------- */
+new ResizeObserver(resize).observe(stage);
+function restore(){let saved=null;try{saved=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
+  if(!saved||(!saved.img&&!saved.isExample)){loadExample();return;}
+  const apply=()=>{hist.length=0;S.pans=saved.pans||[];S.obstacles=saved.obstacles||[];S.calib=saved.calib||null;S.mpp=saved.mpp||null;
+    if(saved.mod&&(saved.modV2||saved.mod.preset==='custom')){Object.assign(S.mod,saved.mod);if(!saved.modV3&&S.mod.preset==='p2000'&&S.mod.wp===450)S.mod.wp=500;}else if(saved.mod){S.mod.margin=saved.mod.margin;S.mod.gap=saved.mod.gap;}if(saved.forced)S.forced=saved.forced;if(saved.roofMode){S.roofMode=saved.roofMode;$('roofMode').value=saved.roofMode;}S.seq=saved.seq||50;S.colorIdx=saved.colorIdx||S.pans.length;renderModule();renderForced();fit();setMode('select');renderCalib();renderEditor();changed();};
+  if(saved.img)setImage(saved.img,false,apply);else setImage(makeExample(),true,apply);}
+renderModule();renderCalib();renderList();setHint();restore();pvCheck();
+})();
+</script>
+</body>
+</html>
