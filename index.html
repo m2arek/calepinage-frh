@@ -173,7 +173,7 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
           <div id="map" aria-label="Carte IGN"></div>
           <div class="capframe" id="capFrame"></div>
           <div class="mapbar">
-            <div class="row"><input type="text" id="mapQ" placeholder="Adresse ou coordonnées GPS (ex. 14.6313, -61.0553)" autocomplete="off"><button type="button" class="btn acc" id="mapGo">Rechercher</button></div>
+            <div class="row"><input type="text" id="mapQ" placeholder="Tapez une adresse (suggestions automatiques) ou des coordonnées GPS" autocomplete="off"><button type="button" class="btn acc" id="mapGo">Rechercher</button></div>
             <div class="mapres" id="mapRes" hidden></div>
           </div>
           <div class="mapfoot"><span id="mapHelp">1. Cherchez l'adresse · 2. <b>Cliquez sur le bâtiment</b> · 3. Cadrez la toiture dans le pointillé · 4. Capturez</span><button type="button" class="btn acc" id="mapCapture">Capturer cette vue</button></div>
@@ -1080,7 +1080,24 @@ async function mapSearch(){const q=$('mapQ').value.trim();const box=$('mapRes');
       MAP.m.setView([g[1],g[0]],19);placeMarker(g[1],g[0]);$('mapHelp').innerHTML='Adresse trouvée. <b>Cliquez exactement sur le bâtiment</b> pour placer le repère, puis capturez.';}));}
   catch(e){box.innerHTML='<button type="button" disabled>Recherche d\'adresse indisponible. Collez plutôt des coordonnées GPS.</button>';}}
 $('mapGo').addEventListener('click',mapSearch);
-$('mapQ').addEventListener('keydown',e=>{if(e.key==='Enter')mapSearch();});
+/* ---------- autocomplétion d'adresse (Géoplateforme IGN) ---------- */
+const AC={t:null,seq:0,items:[],idx:-1};
+function goTo(lat,lon,label){$('mapRes').hidden=true;AC.items=[];AC.idx=-1;if(label)$('mapQ').value=label;
+  MAP.m.setView([lat,lon],19);placeMarker(lat,lon);$('mapHelp').innerHTML='Adresse trouvée. <b>Cliquez exactement sur le bâtiment</b> pour placer le repère, puis capturez.';}
+function renderAC(){const box=$('mapRes');if(!AC.items.length){box.hidden=true;return;}
+  box.innerHTML=AC.items.map((x,i)=>`<button type="button" data-i="${i}"${i===AC.idx?' style="background:var(--accent-soft)"':''}>${esc(x.label)}</button>`).join('');box.hidden=false;
+  box.querySelectorAll('button').forEach(b=>b.addEventListener('mousedown',e=>{e.preventDefault();const x=AC.items[+b.dataset.i];goTo(x.lat,x.lon,x.label);}));}
+async function autocomplete(){const q=$('mapQ').value.trim();const my=++AC.seq;
+  if(q.length<3||/^\s*-?\d+(?:[.,]\d+)?\s*[,;\s]\s*-?\d+(?:[.,]\d+)?\s*$/.test(q)){AC.items=[];renderAC();return;}
+  try{const r=await fetch('https://data.geopf.fr/geocodage/completion?maximumResponses=6&type=StreetAddress,PositionOfInterest&text='+encodeURIComponent(q));const j=await r.json();
+    if(my!==AC.seq)return;AC.items=(j.results||[]).filter(x=>x.x!=null&&x.y!=null).map(x=>({label:x.fulltext,lat:+x.y,lon:+x.x}));AC.idx=-1;renderAC();}
+  catch(e){/* silencieux : la touche Entrée reste disponible */}}
+$('mapQ').addEventListener('input',()=>{clearTimeout(AC.t);AC.t=setTimeout(autocomplete,220);});
+$('mapQ').addEventListener('blur',()=>setTimeout(()=>{$('mapRes').hidden=true;},150));
+$('mapQ').addEventListener('keydown',e=>{
+  if(AC.items.length&&!$('mapRes').hidden&&(e.key==='ArrowDown'||e.key==='ArrowUp')){e.preventDefault();AC.idx=(AC.idx+(e.key==='ArrowDown'?1:-1)+AC.items.length)%AC.items.length;renderAC();return;}
+  if(e.key==='Escape'){$('mapRes').hidden=true;return;}
+  if(e.key==='Enter'){if(AC.items.length&&!$('mapRes').hidden){const x=AC.items[Math.max(0,AC.idx)];goTo(x.lat,x.lon,x.label);}else mapSearch();}});
 function loadTile(url){return new Promise(res=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>res(im);im.onerror=()=>res(null);im.src=url;});}
 async function captureMap(){if(!MAP.m)return;if(S.mod.gpsLat==null){toast('Cliquez d\'abord sur le bâtiment pour le repérer.');return;}
   const btn=$('mapCapture');btn.disabled=true;btn.textContent='Capture en cours…';
