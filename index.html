@@ -265,7 +265,7 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
             <select id="pPose"><option value="auto">Automatique (le plus de modules)</option><option value="portrait">Portrait imposé</option><option value="paysage">Paysage imposé</option></select></div>
           <p class="readout" id="pRead"></p>
           <p class="readout" id="pJoins"></p>
-          <button type="button" class="btn acc" id="pAlign" hidden>Aligner la hauteur sur les pans voisins</button>
+          <button type="button" class="btn acc" id="pAlign" hidden>Raccorder aux pans voisins (pente et hauteur)</button>
           <div class="btnrow">
             <button type="button" class="btn" id="pEave">Choisir la gouttière</button>
             <button type="button" class="btn" id="pReset">Remettre les panneaux</button>
@@ -826,9 +826,19 @@ function renderReadout(){const it=selItem();if(!it||S.sel.type!=='pan')return;co
   let bad=false;jb.innerHTML=J.map(j=>{const ok=j.max<0.05;if(!ok)bad=true;const spread=Math.max(...j.diffs)-Math.min(...j.diffs);
     return `Raccord avec <b>${esc(j.q.name)}</b> : `+(ok?'<span class="okc">aligné</span>':`<span class="warn">écart jusqu'à ${nf(j.max*100)} cm</span>`+(spread>0.05?' <span class="small">(l\'écart varie le long du raccord : vérifiez la pente ou la gouttière d\'un des deux pans)</span>':''));}).join('<br>');
   $('pAlign').hidden=!bad;}
-function alignPan(){const it=selItem();if(!it||S.sel.type!=='pan')return;const J=panJoins(it);const all=[].concat(...J.map(j=>j.diffs));if(!all.length)return;
-  snapshot();const off=all.reduce((a,b)=>a+b,0)/all.length;it.eaveH=Math.max(0,Math.round((it.eaveH+off)*100)/100);$('pEaveH').value=it.eaveH;changed();
-  const J2=panJoins(it);const rest=Math.max(0,...J2.map(j=>j.max));toast(rest<0.05?'Hauteur alignée sur les pans voisins':`Hauteur ajustée, écart restant ${nf(rest*100)} cm : vérifiez la pente ou la gouttière`);}
+/* raccord automatique : on cherche la hauteur à la gouttière (et la pente si le raccord monte le long du pan)
+   qui fait passer ce pan exactement par les points communs avec ses voisins */
+function alignPan(){const it=selItem();if(!it||S.sel.type!=='pan'||!S.mpp)return;const tol=joinTol(),F=frame(it);
+  const pts=[];const add=(v,q)=>{const m={x:v.x*S.mpp,y:v.y*S.mpp};pts.push({d:-dot(sub(m,F.A),F.d),h:heightAtPx(q,v)});};
+  S.pans.forEach(q=>{if(q===it||q.pts.length<3)return;it.pts.forEach(v=>{if(onBoundary(v,q,tol))add(v,q);});q.pts.forEach(v=>{if(onBoundary(v,it,tol)&&!it.pts.some(w=>Math.hypot(w.x-v.x,w.y-v.y)<tol))add(v,q);});});
+  if(!pts.length){toast('Ce pan ne touche aucun autre pan.');return;}
+  snapshot();const n=pts.length,md=pts.reduce((a,p)=>a+p.d,0)/n,mh=pts.reduce((a,p)=>a+p.h,0)/n;
+  const vd=pts.reduce((a,p)=>a+(p.d-md)**2,0)/n;let msg;
+  if(!isFlat(it)&&vd>0.04){const b=pts.reduce((a,p)=>a+(p.d-md)*(p.h-mh),0)/n/vd;const sl=Math.atan(b)*180/Math.PI;
+    if(sl>0.5&&sl<75){it.slope=Math.round(sl*10)/10;it.eaveH=Math.max(0,Math.round((mh-b*md)*100)/100);msg=`Pente ajustée à ${nf(it.slope,1)}° et hauteur à la gouttière à ${nf(it.eaveH,2)} m`;}}
+  if(!msg){const t=Math.tan(it.slope*Math.PI/180);it.eaveH=Math.max(0,Math.round((mh-t*md)*100)/100);msg=`Hauteur à la gouttière ajustée à ${nf(it.eaveH,2)} m`;}
+  it.off=[];changed();renderEditor();const rest=Math.max(0,...panJoins(it).map(j=>j.max));
+  toast(rest<0.05?msg+' : pan raccordé':msg+`, écart restant ${nf(rest*100)} cm : vérifiez la gouttière choisie ou les pans voisins`);}
 function bindPan(id,fn,num){const el=$(id);el.addEventListener('focus',()=>snapshot());el.addEventListener('input',()=>{const it=selItem();if(!it||S.sel.type!=='pan')return;
   let v=el.value;if(num){v=parseFloat(String(v).replace(',','.'));if(isNaN(v))return;}fn(it,v);changed();});}
 bindPan('pName',(p,v)=>p.name=v||'Pan');
@@ -1076,11 +1086,10 @@ function build3d(){const g=T3.group;
       if(L.flat){const b=pn.plan.map(q=>surfH(q)+0.12);const c=pn.plan.map((q,i)=>[q.x,b[i]+((L.south?i>=2:i<2)?L.rise:0),q.y]);
         panelPos.push(...c[0],...c[1],...c[2],...c[0],...c[2],...c[3]);for(let k=0;k<4;k++)panelLines.push(...c[k],...c[(k+1)%4]);
         [0,1].forEach(i=>panelLines.push(...c[i],c[i][0],b[i]-0.12,c[i][2]));[2,3].forEach(i=>panelLines.push(...c[i],c[i][0],b[i]-0.12,c[i][2]));return;}
-      const ch=pn.plan.map(surfH);let bump=0;const q0=pn.plan[0],q1=pn.plan[1],q3=pn.plan[3];
+      let bump=-Infinity;const q0=pn.plan[0],q1=pn.plan[1],q3=pn.plan[3];
       for(let a=0;a<=2;a++)for(let b=0;b<=2;b++){const s=a/2,t=b/2;const q={x:q0.x+(q1.x-q0.x)*s+(q3.x-q0.x)*t,y:q0.y+(q1.y-q0.y)*s+(q3.y-q0.y)*t};
-        const bil=ch[0]*(1-s)*(1-t)+ch[1]*s*(1-t)+ch[2]*s*t+ch[3]*(1-s)*t;bump=Math.max(bump,surfH(q)-bil);}
-      const lift=0.05+Math.min(bump,0.3);
-      const c=pn.plan.map((q,i)=>[q.x,ch[i]+lift,q.y]);
+        bump=Math.max(bump,surfH(q)-F.height(q));}
+      const c=pn.plan.map(q=>[q.x,F.height(q)+bump+0.05,q.y]);
       panelPos.push(...c[0],...c[1],...c[2],...c[0],...c[2],...c[3]);for(let k=0;k<4;k++)panelLines.push(...c[k],...c[(k+1)%4]);});});
   if(panelPos.length){const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.Float32BufferAttribute(panelPos,3));pg.computeVertexNormals();
     g.add(new THREE.Mesh(pg,new THREE.MeshPhongMaterial({color:0x1a2a4a,specular:0x26344c,shininess:35,side:THREE.DoubleSide})));
