@@ -56,6 +56,14 @@ h1{font:700 clamp(22px,3vw,30px)/1.05 var(--display);margin:5px 0 0}
 .msg3d{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--muted)}
 .dropzone{position:absolute;inset:0;background:rgba(210,122,8,.18);border:3px dashed var(--accent);display:flex;align-items:center;justify-content:center;font:700 18px var(--display);color:var(--ink);pointer-events:none}
 .btn3d{position:absolute;top:10px;left:10px;display:flex;gap:6px}
+.quickbar{position:absolute;top:10px;left:10px;right:58px;z-index:6;display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 8px;box-shadow:0 3px 12px rgba(0,0,0,.22);width:max-content;max-width:calc(100% - 68px);font-size:13px}
+.quickbar label{display:inline-flex;align-items:center;gap:5px;font-weight:600}
+.quickbar input{width:62px;padding:5px 7px}
+.quickbar select{width:auto;padding:5px 7px}
+.quickbar .btn{padding:5px 10px}
+.quickbar .qpan,.quickbar .qobs{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}
+.qname{margin-right:6px;display:inline-flex;align-items:center;gap:6px;font-weight:700;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#qEave.on{background:#22c55e;border-color:#22c55e;color:#062}
 .draftbar{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5}
 .draftbar .btn{box-shadow:0 2px 8px rgba(0,0,0,.25)}
 #mapView{position:absolute;inset:0}
@@ -122,6 +130,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,label.btn:focus-wi
 .ptab td{padding:4px 4px;text-align:right;border-bottom:1px solid var(--line)}
 .ptab tr.sumrow td{font-weight:700;border-bottom:0}
 .small a{color:var(--accent)}
+.ctog{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.ctog::before{content:'▾';font-size:12px;color:var(--muted);transition:transform .15s}
+.ctog:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.card.collapsed .ctog::before{transform:rotate(-90deg)}
+.card.collapsed>*:not(h2):not(.csum){display:none!important}
+.card:not(.collapsed)>.csum{display:none}
+.csum{display:flex;gap:6px;align-items:center}
 .switch{display:flex;gap:9px;align-items:flex-start;font-weight:600;font-size:13px;cursor:pointer}
 .switch input{width:18px;height:18px;accent-color:var(--accent);margin:1px 0 0;flex:none}
 .tot{display:flex;flex-direction:column;gap:2px}
@@ -193,6 +208,15 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
         </div>
         <div class="north" id="north" title="Nord supposé en haut de la capture"><span>▲</span><span>N</span></div>
         <div class="measure" id="measure" hidden></div>
+        <div class="quickbar" id="quickbar" hidden>
+          <span class="qname" id="qName"></span>
+          <span class="qpan" id="qPanBox"><label>Pente <input type="number" id="qSlope" min="0" max="75" step="1"></label>
+            <label id="qTiltBox">Supports <input type="number" id="qTilt" min="0" max="35" step="1"></label>
+            <button type="button" class="btn" id="qEave" title="Raccourci : G">Gouttière</button>
+            <select id="qPose" aria-label="Pose des modules"><option value="auto">Pose auto</option><option value="portrait">Portrait</option><option value="paysage">Paysage</option></select></span>
+          <span class="qobs" id="qObsBox"><select id="qKind" aria-label="Type d'obstacle"><option value="velux">Fenêtre de toit</option><option value="chem">Cheminée</option><option value="autre">Autre</option></select></span>
+          <button type="button" class="btn danger" id="qDel" title="Suppr">Supprimer</button>
+        </div>
         <div class="draftbar"><button type="button" class="btn acc" id="finishBtn" hidden>Fermer le tracé</button><button type="button" class="btn" id="cancelDraftBtn" hidden>Annuler le tracé</button></div>
         <div class="dropzone" id="dropzone" hidden>Déposez la capture ici</div>
         <div class="hint" id="hint"></div>
@@ -200,8 +224,9 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
     </main>
 
     <aside class="side">
-      <section class="card">
-        <h2>Capture satellite <span class="step">Étape 1</span></h2>
+      <section class="card coll" id="card1">
+        <h2><button type="button" class="ctog" aria-expanded="true">Capture satellite</button> <span class="step">Étape 1</span></h2>
+        <p class="small csum" id="sum1"></p>
         <p class="small">Trouvez la maison sur la carte IGN : la capture se fait en un clic et l'échelle est réglée automatiquement.</p>
         <div class="btnrow">
           <button type="button" class="btn acc" id="openMapBtn">Trouver le bâtiment sur la carte</button>
@@ -214,8 +239,9 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
         <p class="small" id="imgInfo"></p>
       </section>
 
-      <section class="card">
-        <h2>Échelle <span class="step">Étape 2</span></h2>
+      <section class="card coll" id="card2">
+        <h2><button type="button" class="ctog" aria-expanded="true">Échelle</button> <span class="step">Étape 2</span></h2>
+        <p class="small csum" id="sum2"></p>
         <div class="status" id="calibStatus"></div>
         <div id="calibForm" hidden class="field">
           <label for="calibLen">Longueur réelle du trait (m)</label>
@@ -522,9 +548,9 @@ function undo(){const s=hist.pop();if(!s){toast('Rien à annuler');return;}const
 let saveT=null;
 function save(){clearTimeout(saveT);saveT=setTimeout(()=>{const base={v:1,isExample:S.isExample,pans:S.pans,obstacles:S.obstacles,calib:S.calib,mpp:S.mpp,mod:S.mod,modV2:true,modV3:true,seq:S.seq,colorIdx:S.colorIdx,roofMode:S.roofMode,poseAuto:true,forced:S.forced,capture:S.capture||null};
   try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:S.isExample?null:S.imgURL},base)));}catch(e){try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:null,imgLost:true},base)));}catch(_){}}},400);}
-function changed(){recalc();if(typeof renderPvStatus==='function'&&$('pvStatus'))renderPvStatus();if(typeof renderForced==='function'&&$('fOn'))try{renderForced();}catch(e){}renderList();renderSummary();renderReadout();draw();T3.dirty=true;if(S.view3d)show3d();save();}
+function changed(){recalc();if(typeof renderQuick==='function')renderQuick();if(typeof renderPvStatus==='function'&&$('pvStatus'))renderPvStatus();if(typeof renderForced==='function'&&$('fOn'))try{renderForced();}catch(e){}renderList();renderSummary();renderReadout();draw();T3.dirty=true;if(S.view3d)show3d();save();}
 function selItem(){if(!S.sel)return null;return S.sel.type==='pan'?S.pans.find(p=>p.id===S.sel.id):S.obstacles.find(o=>o.id===S.sel.id);}
-function select(type,id){S.sel=type?{type,id}:null;S.sub=null;renderList();renderEditor();draw();setHint();}
+function select(type,id){S.sel=type?{type,id}:null;S.sub=null;S.eaveHover=null;renderList();renderEditor();draw();setHint();}
 function deleteSel(){const it=selItem();if(!it)return;snapshot();if(S.sel.type==='pan')S.pans=S.pans.filter(p=>p!==it);else S.obstacles=S.obstacles.filter(o=>o!==it);S.sel=null;changed();renderEditor();}
 
 /* ---------- vue 2D ---------- */
@@ -579,6 +605,9 @@ function draw(){
     ctx.fillStyle='rgba(10,14,13,.78)';roundRect(c.x-tw/2-7,c.y+2,tw+14,20,6);ctx.fill();ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(txt,c.x,c.y+12);});
   if(it&&S.mpp&&S.mode==='select'){ctx.font='600 11px Figtree, system-ui, sans-serif';it.pts.forEach((a,i)=>{const b=it.pts[(i+1)%it.pts.length];const Lm=len(sub(b,a))*S.mpp;if(Lm<0.3)return;
     const m=toScr({x:(a.x+b.x)/2,y:(a.y+b.y)/2});const t=nf(Lm,2)+' m';const tw=ctx.measureText(t).width;ctx.fillStyle='rgba(255,212,59,.95)';roundRect(m.x-tw/2-5,m.y-9,tw+10,18,5);ctx.fill();ctx.fillStyle='#111';ctx.textAlign='center';ctx.fillText(t,m.x,m.y);});}
+  if(S.sub==='eave'&&it&&S.sel.type==='pan'&&S.eaveHover!=null){const a=toScr(it.pts[S.eaveHover]),b=toScr(it.pts[(S.eaveHover+1)%it.pts.length]);
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.lineWidth=9;ctx.strokeStyle='rgba(0,0,0,.5)';ctx.stroke();ctx.lineWidth=5;ctx.strokeStyle='#22c55e';ctx.stroke();
+    ctx.font='700 12px Figtree, system-ui, sans-serif';const m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};const t='Gouttière';const tw=ctx.measureText(t).width;ctx.fillStyle='#22c55e';roundRect(m.x-tw/2-6,m.y-24,tw+12,18,5);ctx.fill();ctx.fillStyle='#062';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,m.x,m.y-15);ctx.textAlign='start';}
   const drawRA=(at,u1,u2)=>{const c=toScr(at),k=13;ctx.beginPath();ctx.moveTo(c.x+u1.x*k,c.y+u1.y*k);ctx.lineTo(c.x+u1.x*k+u2.x*k,c.y+u1.y*k+u2.y*k);ctx.lineTo(c.x+u2.x*k,c.y+u2.y*k);
     ctx.lineWidth=4;ctx.strokeStyle='rgba(0,0,0,.55)';ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle='#22c55e';ctx.stroke();};
   if((S.mode==='pan'||S.mode==='obstacle')&&S.draft.length&&S.ra)S.ra.forEach(r=>drawRA(r.at,r.u1,r.u2));
@@ -657,6 +686,7 @@ cv.addEventListener('pointermove',e=>{
   if(drag&&drag.type==='vertex'){if(!drag.moved){snapshot();drag.moved=true;}const p=snapPoint(sp,new Set(drag.refs),null,false);if(S.snap)S.snap.drag=true;
     drag.refs.forEach(r=>{r.x=p.x;r.y=p.y;});recalc();draw();return;}
   S.shift=e.shiftKey;
+  if(S.sub==='eave'){const it=selItem();S.eaveHover=null;if(it&&S.sel.type==='pan'){const ed=nearestEdge(it.pts,toImg(sp));if(ed&&ed.d<16/S.view.s)S.eaveHover=ed.i;}cv.style.cursor=S.eaveHover!=null?'pointer':'';}
   if(S.mode==='pan'||S.mode==='obstacle'||S.mode==='calib'){
     const ref=S.mode==='calib'?S.calibDraft[S.calibDraft.length-1]:S.draft[S.draft.length-1];
     S.hover=S.mode==='calib'?snapPoint(sp,null,S.calibDraft.length===2?null:ref,e.shiftKey):draftPoint(sp,e.shiftKey,e.altKey);showMeasure(sp,ref);}
@@ -676,6 +706,11 @@ function showMeasure(sp,ref){const m=$('measure');if(!ref||!S.hover||!S.mpp||(S.
   const L=len(sub(S.hover,ref))*S.mpp;let t=nf(L,2)+' m';const D=S.draft;if(S.mode!=='calib'&&D.length>=2&&len(sub(S.hover,ref))>1e-6){const a=angleBetween(sub(D[D.length-2],ref),sub(S.hover,ref))*180/Math.PI;t+=' · '+nf(a,0)+'°'+(S.ra&&S.ra.some(r=>r.at===ref)?' ⊾':'');}m.textContent=t;m.style.left=(sp.x+14)+'px';m.style.top=(sp.y+14)+'px';m.hidden=false;}
 
 function click(sp,shift,alt){
+  if(S.sub==='eave'){const it=selItem();const ip0=toImg(sp);
+    if(it&&S.sel.type==='pan'){const ed=nearestEdge(it.pts,ip0);
+      if(ed&&ed.d<16/S.view.s){snapshot();it.eave=ed.i;S.sub=null;S.subAuto=false;S.eaveHover=null;changed();setHint();renderQuick();toast('Gouttière enregistrée');return;}}
+    /* clic ailleurs : on garde la gouttière proposée et on continue normalement (ex. tracé du pan suivant) */
+    S.sub=null;S.subAuto=false;S.eaveHover=null;setHint();renderQuick();if(S.mode==='select'){draw();return;}}
   if(S.mode==='pan'||S.mode==='obstacle'){
     if(S.draft.length>=3){const f=toScr(S.draft[0]);if(Math.hypot(f.x-sp.x,f.y-sp.y)<12){finishDraft();return;}}
     S.draft.push(draftPoint(sp,shift,alt));S.ra=[];updateDraftButtons();draw();return;}
@@ -684,7 +719,7 @@ function click(sp,shift,alt){
     draw();setHint();return;}
   const ip=toImg(sp);
   if(S.mode==='panels'){const hit=panelAt(ip);if(hit){snapshot();const arr=S.forced.on?(hit.pan.on=hit.pan.on||[]):hit.pan.off;const i=arr.indexOf(hit.key);if(i>=0)arr.splice(i,1);else arr.push(hit.key);changed();renderForced();}return;}
-  if(S.sub==='eave'){const it=selItem();if(it&&S.sel.type==='pan'){const ed=nearestEdge(it.pts,ip);if(ed&&ed.d<16/S.view.s){snapshot();it.eave=ed.i;S.sub=null;changed();setHint();}}return;}
+  if(false){const it=selItem();if(it&&S.sel.type==='pan'){const ed=nearestEdge(it.pts,ip);if(ed&&ed.d<16/S.view.s){snapshot();it.eave=ed.i;S.sub=null;changed();setHint();}}return;}
   const o=[...S.obstacles].reverse().find(o=>pip(ip,o.pts));if(o){select('obs',o.id);return;}
   const cands=S.pans.filter(p=>pip(ip,p.pts));
   if(cands.length){const cur=S.sel&&S.sel.type==='pan'?cands.findIndex(p=>p.id===S.sel.id):-1;const p=cands[(cur+1)%cands.length];select('pan',p.id);return;}
@@ -704,8 +739,8 @@ function finishDraft(){const pts=dedupe(S.draft);S.draft=[];S.hover=null;updateD
   snapshot();
   if(S.mode==='obstacle'){const o={id:'o'+(S.seq++),pts,kind:S.obsKind||'velux'};S.obstacles.push(o);S.sel={type:'obs',id:o.id};S.lastObsAt=Date.now();}
   else{const last=S.pans[S.pans.length-1];const p={id:'p'+(S.seq++),name:'Pan '+(S.pans.length+1),pts,slope:last?last.slope:35,eaveH:last?last.eaveH:5,pose:'auto',off:[],color:S.colorIdx++};
-    p.eave=defaultEave(pts);S.pans.push(p);S.sel={type:'pan',id:p.id};}
-  changed();renderEditor();setHint();}
+    p.eave=defaultEave(pts);S.pans.push(p);S.sel={type:'pan',id:p.id};if(!isFlat(p)){S.sub='eave';S.subAuto=true;}}
+  changed();renderEditor();setHint();renderQuick();}
 
 window.addEventListener('keydown',e=>{
   const tag=(e.target.tagName||'').toLowerCase();const typing=tag==='input'||tag==='select'||tag==='textarea';
@@ -715,6 +750,8 @@ window.addEventListener('keydown',e=>{
   if(e.key==='Escape'){if(S.draft.length||S.calibDraft.length){S.draft=[];S.calibDraft=[];$('calibForm').hidden=true;updateDraftButtons();}
     else if(S.sub)S.sub=null;else if(S.mode!=='select')setMode('select');else select(null);draw();setHint();return;}
   if(e.key==='Enter'&&S.draft.length){finishDraft();return;}
+  if(e.key==='Enter'&&S.sub==='eave'){S.sub=null;S.subAuto=false;S.eaveHover=null;setHint();renderQuick();draw();return;}
+  if((e.key==='g'||e.key==='G')&&S.sel&&S.sel.type==='pan'&&!S.draft.length){S.sub='eave';S.subAuto=false;setHint();renderQuick();draw();return;}
   if(e.key==='Backspace'&&S.draft.length){e.preventDefault();S.draft.pop();updateDraftButtons();draw();return;}
   if((e.key==='Delete'||e.key==='Backspace')&&S.sel&&S.mode==='select'){e.preventDefault();deleteSel();}
 });
@@ -727,18 +764,18 @@ const HINTS={
   obstacle:'Choisissez le <b>type</b> dans la barre (fenêtre de toit en bleu, cheminée en rouge, autre en jaune), puis cliquez ses coins et fermez sur le 1er point ou avec <b>Entrée</b>.',
   panels:'Cliquez un panneau pour le <b>retirer</b> ; cliquez un emplacement en pointillés pour le remettre.',
   calib:'Cliquez les <b>deux extrémités</b> d\'une longueur connue (idéalement un long côté du toit), puis saisissez sa valeur dans le panneau « Échelle ».',
-  eave:'Cliquez le <b>bord bas</b> du pan sélectionné, côté <b>gouttière</b>. La flèche indique le sens de la pente.'
+  eave:'Cliquez le <b>bord côté gouttière</b> du pan (il s\'éclaire en vert au survol). La flèche montre la pente proposée : si elle est bonne, appuyez sur <b>Entrée</b> ou commencez le pan suivant. Raccourci : <b>G</b>.'
 };
 function setHint(){let h;if(S.viewMap){$('hint').hidden=true;return;}$('hint').hidden=false;if(S.view3d)h='<b>Glisser</b> : tourner · <b>Clic droit</b> ou <b>Maj + glisser</b> : déplacer · <b>Molette</b> ou pincer : zoomer';
   else h=S.sub==='eave'?HINTS.eave:HINTS[S.mode];
   if(!S.view3d&&S.forced.on&&!S.forced.placed)h='<b>Puissance imposée</b> : dessinez tous les pans, puis cliquez « Poser les panneaux ». '+h;
   if(!S.view3d&&!S.mpp&&S.mode!=='calib')h='<b>Échelle non définie</b> : les panneaux apparaîtront après calibration. '+h;$('hint').innerHTML=h;}
-function setMode(m){S.mode=m;S.sub=null;S.draft=[];S.hover=null;S.snap=null;if(m!=='calib'){S.calibDraft=[];$('calibForm').hidden=true;}else{S.calibDraft=[];}
+function setMode(m){S.mode=m;S.sub=null;S.eaveHover=null;setTimeout(()=>{if(typeof renderQuick==='function')renderQuick();},0);S.draft=[];S.hover=null;S.snap=null;if(m!=='calib'){S.calibDraft=[];$('calibForm').hidden=true;}else{S.calibDraft=[];}
   document.querySelectorAll('#modes .tb').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));
   $('obsKindGroup').hidden=m!=='obstacle';renderKindBtns();
   cv.style.cursor=(m==='select'||m==='panels')?'default':'crosshair';$('measure').hidden=true;updateDraftButtons();setHint();draw();}
-function updateDraftButtons(){const d=S.draft.length>0;$('finishBtn').hidden=!(d&&S.draft.length>=3);$('cancelDraftBtn').hidden=!d;}
-document.querySelectorAll('#modes .tb').forEach(b=>b.addEventListener('click',()=>{if(S.view3d||S.viewMap)show2d();setMode(b.dataset.mode);}));
+function updateDraftButtons(){const d=S.draft.length>0;if(typeof renderQuick==='function')renderQuick();$('finishBtn').hidden=!(d&&S.draft.length>=3);$('cancelDraftBtn').hidden=!d;}
+document.querySelectorAll('#modes .tb').forEach(b=>b.addEventListener('click',()=>{if(S.view3d||S.viewMap)show2d();setMode(b.dataset.mode);if(b.dataset.mode==='calib')setCollapsed(2,false);}));
 function renderKindBtns(){document.querySelectorAll('#obsKindGroup .tb').forEach(b=>b.classList.toggle('on',b.dataset.kind===(S.obsKind||'velux')));}
 document.querySelectorAll('#obsKindGroup .tb').forEach(b=>b.addEventListener('click',()=>{S.obsKind=b.dataset.kind;renderKindBtns();
   const it=selItem();if(it&&S.sel.type==='obs'&&!S.draft.length&&Date.now()-(S.lastObsAt||0)<15000){snapshot();it.kind=S.obsKind;$('oKind').value=it.kind;changed();}}));
@@ -751,10 +788,10 @@ $('fitBtn').addEventListener('click',()=>{if(S.view3d)recenter3d();else fit();})
 function showCalibForm(){$('calibForm').hidden=false;const i=$('calibLen');i.value=S.calib?'':'';setTimeout(()=>i.focus(),30);}
 function applyCalib(){const L=parseFloat(String($('calibLen').value).replace(',','.'));if(!(L>0)){toast('Saisissez une longueur en mètres.');return;}
   const [a,b]=S.calibDraft;if(!a||!b)return;snapshot();S.calib={a:{...a},b:{...b},len:L};S.mpp=L/len(sub(b,a));S.calibDraft=[];$('calibForm').hidden=true;
-  renderCalib();setMode('select');changed();toast('Échelle enregistrée');}
+  renderCalib();setMode('select');changed();autoCollapse();toast('Échelle enregistrée');}
 $('calibOk').addEventListener('click',applyCalib);
 $('calibLen').addEventListener('keydown',e=>{if(e.key==='Enter')applyCalib();});
-function renderCalib(){const s=$('calibStatus');
+function renderCalib(){const s=$('calibStatus');setTimeout(renderSums,0);
   if(S.mpp)s.innerHTML=`<span class="pill ok">${S.calib&&S.calib.auto?'Automatique':'Calibrée'}</span><span>1 pixel = ${nf(S.mpp*100,1)} cm</span>`+(S.calib&&S.calib.auto?`<span class="small">capture IGN, zoom ${S.calib.z}</span>`:S.calib&&S.calib.len?`<span class="small">réf. ${nf(S.calib.len,2)} m</span>`:'');
   else s.innerHTML='<span class="pill warn">À définir</span><span class="small">Choisissez « Échelle » dans la barre d\'outils.</span>';}
 
@@ -765,7 +802,14 @@ function renderList(){const box=$('panList');
     return `<button type="button" class="panrow${on?' on':''}" data-id="${p.id}"><i class="sw" style="background:${COLORS[p.color%COLORS.length]}"></i><span class="pn">${esc(p.name)}</span><span class="pm">${p.slope>0?o.short:'Plat'} · ${nf(p.slope)}°</span><span class="pc${bad?' bad':''}" ${bad?'title="Mal raccordé à un pan voisin"':''}>${S.mpp?activeCount(p)+' mod.'+(bad?' · écart':''):'–'}</span></button>`;}).join('');
   const n=S.obstacles.length;$('obsInfo').textContent=n?`${n} obstacle${n>1?'s':''} (cliquez-en un sur le plan pour le modifier).`:'';}
 $('panList').addEventListener('click',e=>{const b=e.target.closest('.panrow');if(b){if(S.view3d)show2d();select('pan',b.dataset.id);}});
-function renderEditor(){const it=selItem();const isPan=it&&S.sel.type==='pan';$('panEditor').hidden=!isPan;$('obsEditor').hidden=!(it&&S.sel.type==='obs');
+function renderQuick(){const q=$('quickbar');const it=selItem();
+  if(!it||S.view3d||S.viewMap||S.draft.length){q.hidden=true;return;}q.hidden=false;const isPan=S.sel.type==='pan';
+  $('qPanBox').hidden=!isPan;$('qObsBox').hidden=isPan;
+  if(isPan){$('qName').innerHTML=`<i class="sw" style="background:${COLORS[it.color%COLORS.length]}"></i>${esc(it.name)}`;const fl=isFlat(it);
+    if(document.activeElement!==$('qSlope'))$('qSlope').value=it.slope;if(document.activeElement!==$('qTilt'))$('qTilt').value=it.tilt??10;
+    $('qTiltBox').hidden=!fl;$('qEave').hidden=fl;$('qPose').hidden=fl;$('qPose').value=(it.pose==='portrait'||it.pose==='paysage')?it.pose:'auto';$('qEave').classList.toggle('on',S.sub==='eave');}
+  else{$('qName').textContent='Obstacle';$('qKind').value=it.kind;}}
+function renderEditor(){renderQuick();const it=selItem();const isPan=it&&S.sel.type==='pan';$('panEditor').hidden=!isPan;$('obsEditor').hidden=!(it&&S.sel.type==='obs');
   if(isPan){$('pPoseWrap').querySelector('label').textContent='Pose des modules';$('pName').value=it.name;$('pSlope').value=it.slope;$('pTilt').value=it.tilt??10;$('pEaveH').value=it.eaveH;$('pPose').value=(it.pose==='portrait'||it.pose==='paysage')?it.pose:'auto';renderReadout();}
   if(it&&S.sel.type==='obs')$('oKind').value=it.kind;}
 function renderReadout(){const it=selItem();if(!it||S.sel.type!=='pan')return;const o=orientOf(it);const L=S.layouts[it.id];const n=activeCount(it);
@@ -795,6 +839,13 @@ bindPan('pPose',(p,v)=>{p.pose=v;p.off=[];});
 $('pEave').addEventListener('click',()=>{if(S.view3d)show2d();if(S.mode!=='select')setMode('select');S.sub='eave';setHint();draw();});
 $('pReset').addEventListener('click',()=>{const it=selItem();if(!it)return;snapshot();it.off=[];changed();});
 $('pDel').addEventListener('click',deleteSel);
+$('qDel').addEventListener('click',deleteSel);
+$('qEave').addEventListener('click',()=>{if(S.sub==='eave'){S.sub=null;}else{S.sub='eave';S.subAuto=false;}setHint();renderQuick();draw();});
+const qBind=(id,fn)=>{const el=$(id);el.addEventListener('focus',()=>snapshot());el.addEventListener('input',()=>{const it=selItem();if(!it)return;fn(it,el.value);changed();renderEditor();});};
+qBind('qSlope',(p,v)=>{v=parseFloat(String(v).replace(',','.'));if(!isNaN(v)){p.slope=clamp(v,0,75);p.off=[];}});
+qBind('qTilt',(p,v)=>{v=parseFloat(String(v).replace(',','.'));if(!isNaN(v)){p.tilt=clamp(v,0,35);p.off=[];}});
+qBind('qPose',(p,v)=>{p.pose=v;p.off=[];});
+qBind('qKind',(o,v)=>{o.kind=v;});
 $('pAlign').addEventListener('click',alignPan);
 $('shareBtn').addEventListener('click',()=>{const data=JSON.stringify({outil:'calepinage-frh',imgW:S.imgW,imgH:S.imgH,mpp:S.mpp,calib:S.calib,mod:S.mod,
   pans:S.pans.map(p=>({name:p.name,slope:p.slope,eaveH:p.eaveH,eave:p.eave,pose:p.pose,pts:p.pts.map(q=>[Math.round(q.x*10)/10,Math.round(q.y*10)/10])})),
@@ -897,13 +948,18 @@ $('clearBtn').addEventListener('click',()=>{const b=$('clearBtn');if(Date.now()-
   snapshot();S.pans=[];S.obstacles=[];S.sel=null;b.textContent='Effacer le dessin';clearArm=0;changed();renderEditor();toast('Dessin effacé (Annuler pour revenir)');});
 
 /* ---------- images ---------- */
+function setCollapsed(n,c){const el=$('card'+n);el.classList.toggle('collapsed',c);el.querySelector('.ctog').setAttribute('aria-expanded',String(!c));}
+function autoCollapse(){renderSums();const done=!!(S.img&&S.mpp);setCollapsed(1,done);setCollapsed(2,done);}
+function renderSums(){$('sum1').innerHTML=S.isExample?'<span class="pill">Exemple</span> maison en L avec garage':S.capture&&S.capture.src==='IGN'?`<span class="pill ok">Capture IGN</span> ${nf(S.capture.lat,5)}, ${nf(S.capture.lon,5)}`:S.img?'<span class="pill ok">Capture chargée</span>':'Aucune capture';
+  $('sum2').innerHTML=S.mpp?`<span class="pill ok">${S.calib&&S.calib.auto?'Automatique':'Calibrée'}</span> 1 pixel = ${nf(S.mpp*100,1)} cm`:'<span class="pill warn">À définir</span>';}
+document.querySelectorAll('.card.coll .ctog').forEach(b=>b.addEventListener('click',()=>{const c=b.closest('.card');setCollapsed(c.id.slice(-1),!c.classList.contains('collapsed'));}));
 function setImage(url,isEx,cb){const im=new Image();im.onload=()=>{S.img=im;S.imgURL=url;S.imgW=im.naturalWidth;S.imgH=im.naturalHeight;S.isExample=isEx;T3.dirty=true;
   $('imgInfo').innerHTML=isEx?'<span class="pill">Exemple</span> Maison en L avec garage, pour essayer l\'outil.':`Capture chargée · ${S.imgW} × ${S.imgH} px`;cb&&cb();};im.src=url;}
 function loadFile(file){if(!file||!/^image\//.test(file.type)){toast('Choisissez une image (PNG ou JPG).');return;}
   const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,2400/Math.max(im.width,im.height));const c=document.createElement('canvas');
     c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
     setImage(c.toDataURL('image/jpeg',0.9),false,()=>{hist.length=0;S.capture=null;S.pans=[];S.obstacles=[];S.calib=null;S.mpp=null;S.sel=null;S.seq=1;S.colorIdx=0;
-      if(S.view3d)show2d();fit();setMode('calib');renderCalib();renderEditor();changed();toast('Étape suivante : tracez une longueur connue');});};im.src=fr.result;};fr.readAsDataURL(file);}
+      if(S.view3d)show2d();fit();setMode('calib');renderCalib();renderEditor();changed();autoCollapse();setCollapsed(2,false);toast('Étape suivante : tracez une longueur connue');});};im.src=fr.result;};fr.readAsDataURL(file);}
 $('fileIn').addEventListener('change',e=>{loadFile(e.target.files[0]);e.target.value='';});
 ['dragenter','dragover'].forEach(t=>stage.addEventListener(t,e=>{e.preventDefault();$('dropzone').hidden=false;}));
 ['dragleave','drop'].forEach(t=>stage.addEventListener(t,e=>{e.preventDefault();$('dropzone').hidden=true;}));
@@ -947,7 +1003,7 @@ function loadExample(){setImage(makeExample(),true,()=>{hist.length=0;S.capture=
   S.pans=EX_PANS.map(p=>({id:'p'+(S.seq++),name:p.name,pts:p.pts.map(([x,y])=>({x:x*EX_K,y:y*EX_K})),eave:p.eave,slope:p.slope,eaveH:p.eaveH,pose:'auto',off:[],color:S.colorIdx++}));
   S.obstacles=EX_OBS.map(o=>({id:'o'+(S.seq++),pts:o.pts.map(([x,y])=>({x:x*EX_K,y:y*EX_K})),kind:o.kind}));
   S.calib={a:{x:6*EX_K,y:8*EX_K},b:{x:26*EX_K,y:8*EX_K},len:20};S.mpp=0.05;S.sel=null;
-  if(S.view3d)show2d();fit();setMode('select');renderCalib();renderEditor();changed();});}
+  if(S.view3d)show2d();fit();setMode('select');renderCalib();renderEditor();changed();autoCollapse();});}
 $('exampleBtn').addEventListener('click',loadExample);
 
 /* ---------- vue 3D ---------- */
@@ -1040,11 +1096,11 @@ function build3d(){const g=T3.group;
   if(bb.x0===Infinity){bb.x0=0;bb.x1=S.imgW*m;bb.z0=0;bb.z1=S.imgH*m;}
   const first=!T3.bbox;T3.bbox=bb;if(first||T3.recenterNext){recenter3d();T3.recenterNext=false;}}
 function setTabs(t){[['tabMap','map'],['tab2d','2d'],['tab3d','3d']].forEach(([id,k])=>{$(id).classList.toggle('on',k===t);$(id).setAttribute('aria-selected',String(k===t));});}
-function show3d(){hideMap();S.view3d=true;$('tab3d').classList.add('on');$('tab2d').classList.remove('on');$('tab3d').setAttribute('aria-selected','true');$('tab2d').setAttribute('aria-selected','false');
+function show3d(){hideMap();S.view3d=true;$('quickbar').hidden=true;$('tab3d').classList.add('on');$('tab2d').classList.remove('on');$('tab3d').setAttribute('aria-selected','true');$('tab2d').setAttribute('aria-selected','false');
   cv.hidden=true;$('north').hidden=true;$('measure').hidden=true;$('three').hidden=false;$('btn3d').hidden=false;
   document.querySelectorAll('#modes .tb').forEach(b=>b.classList.remove('on'));$('finishBtn').hidden=true;$('cancelDraftBtn').hidden=true;setHint();
   setTabs('3d');if(init3d()){if(T3.dirty){build3d();T3.dirty=false;}size3d();}}
-function show2d(){hideMap();S.view3d=false;$('tab2d').classList.add('on');$('tab3d').classList.remove('on');$('tab2d').setAttribute('aria-selected','true');$('tab3d').setAttribute('aria-selected','false');
+function show2d(){hideMap();S.view3d=false;setTimeout(renderQuick,0);$('tab2d').classList.add('on');$('tab3d').classList.remove('on');$('tab2d').setAttribute('aria-selected','true');$('tab3d').setAttribute('aria-selected','false');
   cv.hidden=false;$('north').hidden=false;$('three').hidden=true;$('btn3d').hidden=true;$('msg3d').hidden=true;
   document.querySelectorAll('#modes .tb').forEach(b=>b.classList.toggle('on',b.dataset.mode===S.mode));setTabs('2d');resize();setHint();}
 $('tab3d').addEventListener('click',()=>{if(S.draft.length)finishDraft();show3d();});
@@ -1052,7 +1108,7 @@ $('tab3d').addEventListener('click',()=>{if(S.draft.length)finishDraft();show3d(
 const IGN_TILE='https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg';
 const MAP={m:null,marker:null,ok:0,err:0};
 function hideMap(){S.viewMap=false;$('mapView').hidden=true;}
-function showMap(){if(S.draft.length)finishDraft();S.view3d=false;S.viewMap=true;$('mapView').hidden=false;cv.hidden=true;$('three').hidden=true;$('btn3d').hidden=true;$('msg3d').hidden=true;$('north').hidden=true;$('measure').hidden=true;
+function showMap(){if(S.draft.length)finishDraft();S.view3d=false;S.viewMap=true;$('mapView').hidden=false;$('quickbar').hidden=true;cv.hidden=true;$('three').hidden=true;$('btn3d').hidden=true;$('msg3d').hidden=true;$('north').hidden=true;$('measure').hidden=true;
   $('finishBtn').hidden=true;$('cancelDraftBtn').hidden=true;document.querySelectorAll('#modes .tb').forEach(b=>b.classList.remove('on'));setTabs('map');setHint();
   if(!window.L){mapMsg('La carte n\'a pas pu se charger. Vérifiez la connexion internet, ou déposez une capture avec « Charger une capture ».');return;}
   if(!MAP.m){MAP.m=L.map('map',{maxZoom:21,zoomSnap:0.5});
@@ -1115,7 +1171,7 @@ async function captureMap(){if(!MAP.m)return;if(S.mod.gpsLat==null){toast('Cliqu
     setImage(url,false,()=>{hist.length=0;S.pans=[];S.obstacles=[];S.sel=null;S.seq=1;S.colorIdx=0;S.forced.placed=false;
       S.mpp=mpp;S.calib={auto:true,z,lat};S.capture={src:'IGN',z,lat:gl,lon:gn,mx:mk.x-nw.x,my:mk.y-nw.y};
       $('imgInfo').innerHTML=`Capture IGN · ${W} × ${H} px · zoom ${z} · repère ${nf(gl,5)}, ${nf(gn,5)}<br><span class="small">Photos aériennes © IGN – Géoplateforme</span>`;
-      show2d();fit();setMode('pan');renderCalib();renderEditor();changed();toast('Capture prête, échelle réglée : tracez les pans');});}
+      show2d();fit();setMode('pan');renderCalib();renderEditor();changed();autoCollapse();toast('Capture prête, échelle réglée : tracez les pans');});}
   finally{btn.disabled=false;btn.textContent='Capturer cette vue';}}
 $('mapCapture').addEventListener('click',captureMap);
 $('tabMap').addEventListener('click',showMap);$('openMapBtn').addEventListener('click',showMap);
@@ -1130,7 +1186,7 @@ new ResizeObserver(resize).observe(stage);
 function restore(){let saved=null;try{saved=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
   if(!saved||(!saved.img&&!saved.isExample)){loadExample();return;}
   const apply=()=>{hist.length=0;S.pans=saved.pans||[];if(!saved.poseAuto)S.pans.forEach(p=>{p.pose='auto';p.off=[];});S.obstacles=saved.obstacles||[];S.calib=saved.calib||null;S.mpp=saved.mpp||null;
-    if(saved.mod&&(saved.modV2||saved.mod.preset==='custom')){Object.assign(S.mod,saved.mod);if(!saved.modV3&&S.mod.preset==='p2000'&&S.mod.wp===450)S.mod.wp=500;}else if(saved.mod){S.mod.margin=saved.mod.margin;S.mod.gap=saved.mod.gap;}if(saved.forced)S.forced=saved.forced;if(saved.capture)S.capture=saved.capture;if(saved.roofMode){S.roofMode=saved.roofMode;$('roofMode').value=saved.roofMode;}S.seq=saved.seq||50;S.colorIdx=saved.colorIdx||S.pans.length;renderModule();renderForced();fit();setMode('select');renderCalib();renderEditor();changed();};
+    if(saved.mod&&(saved.modV2||saved.mod.preset==='custom')){Object.assign(S.mod,saved.mod);if(!saved.modV3&&S.mod.preset==='p2000'&&S.mod.wp===450)S.mod.wp=500;}else if(saved.mod){S.mod.margin=saved.mod.margin;S.mod.gap=saved.mod.gap;}if(saved.forced)S.forced=saved.forced;if(saved.capture)S.capture=saved.capture;if(saved.roofMode){S.roofMode=saved.roofMode;$('roofMode').value=saved.roofMode;}S.seq=saved.seq||50;S.colorIdx=saved.colorIdx||S.pans.length;renderModule();renderForced();fit();setMode('select');renderCalib();renderEditor();changed();autoCollapse();};
   if(saved.img)setImage(saved.img,false,apply);else setImage(makeExample(),true,apply);}
 renderModule();renderCalib();renderList();setHint();restore();pvCheck();
 })();
