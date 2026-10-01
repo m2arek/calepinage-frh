@@ -56,6 +56,8 @@ h1{font:700 clamp(22px,3vw,30px)/1.05 var(--display);margin:5px 0 0}
 .msg3d{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--muted)}
 .dropzone{position:absolute;inset:0;background:rgba(210,122,8,.18);border:3px dashed var(--accent);display:flex;align-items:center;justify-content:center;font:700 18px var(--display);color:var(--ink);pointer-events:none}
 .btn3d{position:absolute;top:10px;left:10px;display:flex;gap:6px}
+.draftbar{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5}
+.draftbar .btn{box-shadow:0 2px 8px rgba(0,0,0,.25)}
 #mapView{position:absolute;inset:0}
 #map{position:absolute;inset:0;background:var(--stage)}
 .mapbar{position:absolute;top:10px;left:56px;right:10px;z-index:1100;display:flex;flex-direction:column;gap:4px;max-width:560px}
@@ -162,8 +164,6 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
           <button type="button" class="tb" data-kind="autre">Autre</button>
         </div>
         <div class="group">
-          <button type="button" class="tb primary" id="finishBtn" hidden>Fermer le tracé</button>
-          <button type="button" class="tb" id="cancelDraftBtn" hidden>Annuler le tracé</button>
           <button type="button" class="tb" id="undoBtn" title="Ctrl + Z">Annuler</button>
           <button type="button" class="tb" id="fitBtn">Ajuster</button>
         </div>
@@ -193,6 +193,7 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
         </div>
         <div class="north" id="north" title="Nord supposé en haut de la capture"><span>▲</span><span>N</span></div>
         <div class="measure" id="measure" hidden></div>
+        <div class="draftbar"><button type="button" class="btn acc" id="finishBtn" hidden>Fermer le tracé</button><button type="button" class="btn" id="cancelDraftBtn" hidden>Annuler le tracé</button></div>
         <div class="dropzone" id="dropzone" hidden>Déposez la capture ici</div>
         <div class="hint" id="hint"></div>
       </div>
@@ -578,6 +579,10 @@ function draw(){
     ctx.fillStyle='rgba(10,14,13,.78)';roundRect(c.x-tw/2-7,c.y+2,tw+14,20,6);ctx.fill();ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(txt,c.x,c.y+12);});
   if(it&&S.mpp&&S.mode==='select'){ctx.font='600 11px Figtree, system-ui, sans-serif';it.pts.forEach((a,i)=>{const b=it.pts[(i+1)%it.pts.length];const Lm=len(sub(b,a))*S.mpp;if(Lm<0.3)return;
     const m=toScr({x:(a.x+b.x)/2,y:(a.y+b.y)/2});const t=nf(Lm,2)+' m';const tw=ctx.measureText(t).width;ctx.fillStyle='rgba(255,212,59,.95)';roundRect(m.x-tw/2-5,m.y-9,tw+10,18,5);ctx.fill();ctx.fillStyle='#111';ctx.textAlign='center';ctx.fillText(t,m.x,m.y);});}
+  const drawRA=(at,u1,u2)=>{const c=toScr(at),k=13;ctx.beginPath();ctx.moveTo(c.x+u1.x*k,c.y+u1.y*k);ctx.lineTo(c.x+u1.x*k+u2.x*k,c.y+u1.y*k+u2.y*k);ctx.lineTo(c.x+u2.x*k,c.y+u2.y*k);
+    ctx.lineWidth=4;ctx.strokeStyle='rgba(0,0,0,.55)';ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle='#22c55e';ctx.stroke();};
+  if((S.mode==='pan'||S.mode==='obstacle')&&S.draft.length&&S.ra)S.ra.forEach(r=>drawRA(r.at,r.u1,r.u2));
+  if(it&&S.mode==='select'){const P=it.pts,n=P.length;P.forEach((v,i)=>{const a=sub(P[(i+n-1)%n],v),b=sub(P[(i+1)%n],v);if(len(a)>1e-6&&len(b)>1e-6&&Math.abs(angleBetween(a,b)-Math.PI/2)<0.6*Math.PI/180)drawRA(v,unit(a),unit(b));});}
   if(S.snap&&(S.mode==='pan'||S.mode==='obstacle'||S.mode==='calib'||S.snap.drag)){const s=toScr(S.snap);ctx.beginPath();if(S.snap.kind==='v')ctx.arc(s.x,s.y,8,0,7);else ctx.rect(s.x-6,s.y-6,12,12);ctx.lineWidth=2;ctx.strokeStyle='#00e0ff';ctx.stroke();}
   ctx.textAlign='start';
 }
@@ -599,6 +604,30 @@ function snapPoint(sp,excl,ref,shift){
   if(be){S.snap={x:be.x,y:be.y,kind:'e'};return{x:be.x,y:be.y};}
   S.snap=null;return ip;
 }
+/* ---------- équerre : détection et alignement à 90° pendant le tracé (Alt pour désactiver) ---------- */
+const RA_TOL=4*Math.PI/180;
+function unit(v){const L=len(v)||1;return{x:v.x/L,y:v.y/L};}
+function angleBetween(a,b){return Math.acos(clamp(dot(unit(a),unit(b)),-1,1));}
+function draftPoint(sp,shift,alt){S.ra=[];const D=S.draft,n=D.length;const last=D[n-1];
+  const p0=snapPoint(sp,null,last,shift);if(shift||n<1)return p0;
+  const snappedV=S.snap&&S.snap.kind==='v';
+  /* une accroche sur un bord ne doit pas empêcher l'équerre : on raisonne alors sur la position réelle de la souris */
+  const p=(S.snap&&S.snap.kind==='e')?toImg(sp):p0;
+  /* contraintes possibles : angle droit au dernier point, et angle droit au premier point (pour fermer un rectangle) */
+  const cons=[];
+  if(n>=2){const d1=sub(last,D[n-2]),d2=sub(p,last);if(len(d2)>1e-6&&Math.abs(angleBetween(d1,d2)-Math.PI/2)<RA_TOL){let nn=unit({x:-d1.y,y:d1.x});if(dot(nn,d2)<0)nn={x:-nn.x,y:-nn.y};cons.push({at:last,dir:nn,ref:unit({x:-d1.x,y:-d1.y})});}}
+  if(n>=2){const f=D[0],e1=sub(D[1],f),e2=sub(p,f);if(len(e2)>1e-6&&Math.abs(angleBetween(e1,e2)-Math.PI/2)<RA_TOL){let nn=unit({x:-e1.y,y:e1.x});if(dot(nn,e2)<0)nn={x:-nn.x,y:-nn.y};cons.push({at:f,dir:nn,ref:unit(e1)});}}
+  if(!cons.length)return p0;
+  let q=p;
+  if(!alt&&!snappedV){
+    if(cons.length===2){const A=cons[0],B=cons[1];const den=A.dir.x*B.dir.y-A.dir.y*B.dir.x;
+      if(Math.abs(den)>1e-6){const t=((B.at.x-A.at.x)*B.dir.y-(B.at.y-A.at.y)*B.dir.x)/den;q={x:A.at.x+A.dir.x*t,y:A.at.y+A.dir.y*t};}
+      else{const c=cons[0];const t=dot(sub(p,c.at),c.dir);q={x:c.at.x+c.dir.x*t,y:c.at.y+c.dir.y*t};}}
+    else{const c=cons[0];const t=dot(sub(p,c.at),c.dir);q={x:c.at.x+c.dir.x*t,y:c.at.y+c.dir.y*t};}
+    if(S.snap&&S.snap.kind==='e')S.snap=null;}
+  /* on n'affiche l'équerre que si l'angle final est bien droit (à 0,5° près) */
+  cons.forEach(c=>{const v=sub(q,c.at);if(len(v)>1e-6&&Math.abs(angleBetween(c.ref,v)-Math.PI/2)<0.5*Math.PI/180)S.ra.push({at:c.at,u1:c.ref,u2:unit(v)});});
+  return q;}
 function hitVertex(sp){const it=selItem();if(!it)return null;const tol=10;
   for(const q of it.pts){const s=toScr(q);if(Math.hypot(s.x-sp.x,s.y-sp.y)<tol){const refs=[];[...S.pans,...S.obstacles].forEach(o=>o.pts.forEach(p=>{if(Math.hypot(p.x-q.x,p.y-q.y)<0.75)refs.push(p);}));return{refs};}}
   return null;}
@@ -630,26 +659,26 @@ cv.addEventListener('pointermove',e=>{
   S.shift=e.shiftKey;
   if(S.mode==='pan'||S.mode==='obstacle'||S.mode==='calib'){
     const ref=S.mode==='calib'?S.calibDraft[S.calibDraft.length-1]:S.draft[S.draft.length-1];
-    S.hover=snapPoint(sp,null,(S.mode==='calib'&&S.calibDraft.length===2)?null:ref,e.shiftKey);showMeasure(sp,ref);}
+    S.hover=S.mode==='calib'?snapPoint(sp,null,S.calibDraft.length===2?null:ref,e.shiftKey):draftPoint(sp,e.shiftKey,e.altKey);showMeasure(sp,ref);}
   else{S.hover=null;S.snap=null;$('measure').hidden=true;}
   draw();
 });
 function endPtr(e){touches.delete(e.pointerId);if(!drag)return;
   if(drag.type==='pinch'||drag.type==='dead'){drag=touches.size?{type:'dead'}:null;return;}
   const d=drag;drag=null;
-  if(d.type==='maybe'&&e.type==='pointerup')click(spOf(e),e.shiftKey);
+  if(d.type==='maybe'&&e.type==='pointerup')click(spOf(e),e.shiftKey,e.altKey);
   if(d.type==='vertex'&&d.moved){S.snap=null;changed();}}
 cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
-cv.addEventListener('pointerleave',()=>{if(!drag){S.hover=null;S.snap=null;$('measure').hidden=true;draw();}});
+cv.addEventListener('pointerleave',()=>{if(!drag){S.hover=null;S.snap=null;S.ra=[];$('measure').hidden=true;draw();}});
 cv.addEventListener('wheel',e=>{e.preventDefault();zoomAt(spOf(e),Math.exp(-e.deltaY*0.0015));draw();},{passive:false});
 
 function showMeasure(sp,ref){const m=$('measure');if(!ref||!S.hover||!S.mpp||(S.mode==='calib'&&S.calibDraft.length===2)){m.hidden=true;return;}
-  const L=len(sub(S.hover,ref))*S.mpp;m.textContent=nf(L,2)+' m';m.style.left=(sp.x+14)+'px';m.style.top=(sp.y+14)+'px';m.hidden=false;}
+  const L=len(sub(S.hover,ref))*S.mpp;let t=nf(L,2)+' m';const D=S.draft;if(S.mode!=='calib'&&D.length>=2&&len(sub(S.hover,ref))>1e-6){const a=angleBetween(sub(D[D.length-2],ref),sub(S.hover,ref))*180/Math.PI;t+=' · '+nf(a,0)+'°'+(S.ra&&S.ra.some(r=>r.at===ref)?' ⊾':'');}m.textContent=t;m.style.left=(sp.x+14)+'px';m.style.top=(sp.y+14)+'px';m.hidden=false;}
 
-function click(sp,shift){
+function click(sp,shift,alt){
   if(S.mode==='pan'||S.mode==='obstacle'){
     if(S.draft.length>=3){const f=toScr(S.draft[0]);if(Math.hypot(f.x-sp.x,f.y-sp.y)<12){finishDraft();return;}}
-    S.draft.push(snapPoint(sp,null,S.draft[S.draft.length-1],shift));updateDraftButtons();draw();return;}
+    S.draft.push(draftPoint(sp,shift,alt));S.ra=[];updateDraftButtons();draw();return;}
   if(S.mode==='calib'){if(S.calibDraft.length>=2)S.calibDraft=[];S.calibDraft.push(snapPoint(sp,null,S.calibDraft[S.calibDraft.length-1],shift));
     if(S.calibDraft.length===2){const dpx=len(sub(S.calibDraft[1],S.calibDraft[0]));if(dpx<5){S.calibDraft=[];toast('Trait trop court, recommencez.');}else showCalibForm();}
     draw();setHint();return;}
@@ -694,7 +723,7 @@ window.addEventListener('keyup',e=>{if(e.key===' ')spaceDown=false;});
 /* ---------- modes, aide ---------- */
 const HINTS={
   select:'Cliquez un pan pour le régler. <b>Glissez un sommet</b> pour l\'ajuster (les sommets communs suivent). <b>Double-clic</b> sur un bord : ajoute un sommet ; sur un sommet : le supprime. Glissez le fond pour vous déplacer, molette pour zoomer.',
-  pan:'Cliquez les coins du pan un par un. Les points s\'accrochent aux sommets existants (cercle bleu). Cliquez le <b>1er point</b> ou <b>Entrée</b> pour fermer. <b>Maj</b> : angles à 45°. Retour arrière : effacer le dernier point.',
+  pan:'Cliquez les coins du pan un par un. Les points s\'accrochent aux sommets existants (cercle bleu). Cliquez le <b>1er point</b> ou <b>Entrée</b> pour fermer. <b>Équerre verte</b> : angle droit détecté, le point s\'y aligne (maintenez <b>Alt</b> pour tracer librement). <b>Maj</b> : angles à 45°. Retour arrière : effacer le dernier point.',
   obstacle:'Choisissez le <b>type</b> dans la barre (fenêtre de toit en bleu, cheminée en rouge, autre en jaune), puis cliquez ses coins et fermez sur le 1er point ou avec <b>Entrée</b>.',
   panels:'Cliquez un panneau pour le <b>retirer</b> ; cliquez un emplacement en pointillés pour le remettre.',
   calib:'Cliquez les <b>deux extrémités</b> d\'une longueur connue (idéalement un long côté du toit), puis saisissez sa valeur dans le panneau « Échelle ».',
