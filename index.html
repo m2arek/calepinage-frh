@@ -44,7 +44,7 @@ h1{font:700 clamp(22px,3vw,30px)/1.05 var(--display);margin:5px 0 0}
 .tb.on{background:var(--accent);color:var(--on-accent)}
 .tb.primary{background:var(--ok);color:#fff}
 .tb:disabled{opacity:.4;cursor:default}
-.stage{position:relative;height:clamp(420px,calc(100vh - var(--hdr,72px) - 74px),860px);background:var(--stage);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.stage{position:relative;height:clamp(420px,calc(100vh - var(--hdr,72px) - 96px),860px);background:var(--stage);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 @media (max-width:980px){.stage{height:64vh;min-height:360px}}
 #cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
 #three{position:absolute;inset:0}
@@ -81,6 +81,11 @@ h1{font:700 clamp(22px,3vw,30px)/1.05 var(--display);margin:5px 0 0}
 .leaflet-container{font:inherit}
 
 .side{display:flex;flex-direction:column;gap:12px;min-width:0}
+/* grand écran : la page ne défile plus, seul le panneau de droite défile (le plan et la barre d'outils restent en place) */
+@media (min-width:981px){
+  .side{position:sticky;top:calc(var(--hdr,72px) + 8px);max-height:calc(100vh - var(--hdr,72px) - 44px);overflow-y:auto;overscroll-behavior:contain;padding-right:6px;scrollbar-width:thin}
+  body{padding-block-end:12px}
+}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .card h2{font:700 15px/1.2 var(--display);margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .step{font:700 10.5px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
