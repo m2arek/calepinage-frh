@@ -231,7 +231,7 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
           <div class="field"><label for="pName">Nom du pan</label><input type="text" id="pName" maxlength="40"></div>
           <div class="two">
             <div class="field"><label for="pSlope">Pente (°)</label><input type="number" id="pSlope" min="0" max="75" step="1"></div>
-            <div class="field"><label for="pEaveH">Hauteur à l'égout (m)</label><input type="number" id="pEaveH" min="0" max="40" step="0.1"></div>
+            <div class="field"><label for="pEaveH">Hauteur à la gouttière (m)</label><input type="number" id="pEaveH" min="0" max="40" step="0.1"></div>
           </div>
           <div class="field" id="pTiltWrap" hidden><label for="pTilt">Toit plat : inclinaison des supports (°)</label><input type="number" id="pTilt" min="0" max="35" step="1"></div>
           <div class="field" id="pPoseWrap"><label for="pPose">Pose des modules</label>
@@ -240,7 +240,7 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
           <p class="readout" id="pJoins"></p>
           <button type="button" class="btn acc" id="pAlign" hidden>Aligner la hauteur sur les pans voisins</button>
           <div class="btnrow">
-            <button type="button" class="btn" id="pEave">Choisir l'égout</button>
+            <button type="button" class="btn" id="pEave">Choisir la gouttière</button>
             <button type="button" class="btn" id="pReset">Remettre les panneaux</button>
             <button type="button" class="btn danger" id="pDel">Supprimer le pan</button>
           </div>
@@ -478,10 +478,11 @@ function layoutPan(pan){
   const obs=S.obstacles.map(o=>o.pts.map(p=>F.toUV({x:p.x*S.mpp,y:p.y*S.mpp})));
   let umin=Infinity,umax=-Infinity,vmin=Infinity,vmax=-Infinity;poly.forEach(p=>{umin=Math.min(umin,p.x);umax=Math.max(umax,p.x);vmin=Math.min(vmin,p.y);vmax=Math.max(vmax,p.y);});
   let best=[];
-  for(const fu of [0,.25,.5,.75])for(const fv of [0,.5]){
+  /* rangées calées sous le faîtage : la 1re rangée touche la marge haute, les suivantes descendent vers la gouttière */
+  for(const fu of [0,.25,.5,.75]){
     const res=[];
-    for(let v=vmin+mg+fv*(dv+g);v+dv<=vmax-mg+1e-9;v+=dv+g)
-      for(let u=umin+mg+fu*(du+g);u+du<=umax-mg+1e-9;u+=du+g){
+    for(let v=vmax-mg-dv-0.005;v>=vmin+mg-1e-9;v-=dv+g)
+      for(let u=umin+mg+0.005+fu*(du+g);u+du<=umax-mg+1e-9;u+=du+g){
         const ex=rect(u-mg,v-mg,u+du+mg,v+dv+mg);
         if(!rectContained(ex,poly))continue;
         if(obs.some(o=>polysOverlap(o,ex)))continue;
@@ -692,7 +693,7 @@ const HINTS={
   obstacle:'Choisissez le <b>type</b> dans la barre (fenêtre de toit en bleu, cheminée en rouge, autre en jaune), puis cliquez ses coins et fermez sur le 1er point ou avec <b>Entrée</b>.',
   panels:'Cliquez un panneau pour le <b>retirer</b> ; cliquez un emplacement en pointillés pour le remettre.',
   calib:'Cliquez les <b>deux extrémités</b> d\'une longueur connue (idéalement un long côté du toit), puis saisissez sa valeur dans le panneau « Échelle ».',
-  eave:'Cliquez le <b>bord bas</b> (égout, côté gouttière) du pan sélectionné. La flèche indique le sens de la pente.'
+  eave:'Cliquez le <b>bord bas</b> du pan sélectionné, côté <b>gouttière</b>. La flèche indique le sens de la pente.'
 };
 function setHint(){let h;if(S.viewMap){$('hint').hidden=true;return;}$('hint').hidden=false;if(S.view3d)h='<b>Glisser</b> : tourner · <b>Clic droit</b> ou <b>Maj + glisser</b> : déplacer · <b>Molette</b> ou pincer : zoomer';
   else h=S.sub==='eave'?HINTS.eave:HINTS[S.mode];
@@ -745,11 +746,11 @@ function renderReadout(){const it=selItem();if(!it||S.sel.type!=='pan')return;co
   if(!S.mpp){jb.innerHTML='';$('pAlign').hidden=true;return;}
   if(!J.length){jb.innerHTML='<span class="warn">Aucun raccord détecté : ce pan ne touche aucun autre pan. Pour les relier, accrochez ses sommets à ceux du pan voisin (cercle bleu en traçant).</span>';$('pAlign').hidden=true;return;}
   let bad=false;jb.innerHTML=J.map(j=>{const ok=j.max<0.05;if(!ok)bad=true;const spread=Math.max(...j.diffs)-Math.min(...j.diffs);
-    return `Raccord avec <b>${esc(j.q.name)}</b> : `+(ok?'<span class="okc">aligné</span>':`<span class="warn">écart jusqu'à ${nf(j.max*100)} cm</span>`+(spread>0.05?' <span class="small">(l\'écart varie le long du raccord : vérifiez la pente ou l\'égout d\'un des deux pans)</span>':''));}).join('<br>');
+    return `Raccord avec <b>${esc(j.q.name)}</b> : `+(ok?'<span class="okc">aligné</span>':`<span class="warn">écart jusqu'à ${nf(j.max*100)} cm</span>`+(spread>0.05?' <span class="small">(l\'écart varie le long du raccord : vérifiez la pente ou la gouttière d\'un des deux pans)</span>':''));}).join('<br>');
   $('pAlign').hidden=!bad;}
 function alignPan(){const it=selItem();if(!it||S.sel.type!=='pan')return;const J=panJoins(it);const all=[].concat(...J.map(j=>j.diffs));if(!all.length)return;
   snapshot();const off=all.reduce((a,b)=>a+b,0)/all.length;it.eaveH=Math.max(0,Math.round((it.eaveH+off)*100)/100);$('pEaveH').value=it.eaveH;changed();
-  const J2=panJoins(it);const rest=Math.max(0,...J2.map(j=>j.max));toast(rest<0.05?'Hauteur alignée sur les pans voisins':`Hauteur ajustée, écart restant ${nf(rest*100)} cm : vérifiez la pente ou l'égout`);}
+  const J2=panJoins(it);const rest=Math.max(0,...J2.map(j=>j.max));toast(rest<0.05?'Hauteur alignée sur les pans voisins':`Hauteur ajustée, écart restant ${nf(rest*100)} cm : vérifiez la pente ou la gouttière`);}
 function bindPan(id,fn,num){const el=$(id);el.addEventListener('focus',()=>snapshot());el.addEventListener('input',()=>{const it=selItem();if(!it||S.sel.type!=='pan')return;
   let v=el.value;if(num){v=parseFloat(String(v).replace(',','.'));if(isNaN(v))return;}fn(it,v);changed();});}
 bindPan('pName',(p,v)=>p.name=v||'Pan');
@@ -806,9 +807,9 @@ async function placeForced(){if(!S.mpp){toast('Définissez d\'abord l\'échelle.
   const ranked=S.pans.map(p=>({p,spec:panSpec(p),L:S.layouts[p.id]})).filter(x=>x.L&&x.L.panels.length).sort((a,b)=>b.spec-a.spec);
   let left=N;const used=[];
   ranked.forEach(({p,L})=>{if(left<=0)return;const k=Math.min(left,L.panels.length);left-=k;
-    /* rangée par rangée depuis l'égout (depuis le sud sur toit plat), chaque rangée centrée sur le même axe : bloc compact */
+    /* rangée par rangée depuis le faîtage (depuis le sud sur toit plat), chaque rangée centrée sur le même axe : bloc compact */
     const rows={};L.panels.forEach(pn=>{const r=pn.v.toFixed(2);(rows[r]=rows[r]||[]).push(pn);});
-    const order=Object.keys(rows).map(Number).sort((a,b)=>L.flat&&!south()?b-a:a-b);
+    const order=Object.keys(rows).map(Number).sort((a,b)=>L.flat&&south()?a-b:b-a);
     const first=rows[order[0].toFixed(2)];const cu=first.reduce((a,x)=>a+x.u,0)/first.length;let need=k;
     order.forEach(r=>{if(need<=0)return;const row=rows[r.toFixed(2)].slice().sort((a,b)=>Math.abs(a.u-cu)-Math.abs(b.u-cu));row.slice(0,need).forEach(pn=>p.on.push(pn.key));need-=Math.min(need,row.length);});
     used.push([p.name,k]);});
