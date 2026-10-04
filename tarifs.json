@@ -1,0 +1,463 @@
+{
+  "maj": "2026-10-01",
+  "installations": {
+    "3_nobat": {
+      "prix": 11900,
+      "remise": 1000,
+      "mens": {
+        "60": 245.98,
+        "96": 172.56,
+        "120": 148.47,
+        "144": 132.65,
+        "180": 117.21
+      },
+      "mensRS": {
+        "60": 225.31,
+        "96": 158.06,
+        "120": 135.99,
+        "144": 121.5,
+        "180": 107.35
+      }
+    },
+    "6_nobat": {
+      "prix": 16900,
+      "remise": 1000,
+      "mens": {
+        "60": 349.33,
+        "96": 245.06,
+        "120": 210.84,
+        "144": 188.39,
+        "180": 166.45
+      },
+      "mensRS": {
+        "60": 328.67,
+        "96": 230.57,
+        "120": 198.37,
+        "144": 177.25,
+        "180": 156.61
+      }
+    },
+    "9_nobat": {
+      "prix": 19900,
+      "remise": 1000,
+      "mens": {
+        "60": 411.35,
+        "96": 288.56,
+        "120": 248.27,
+        "144": 221.83,
+        "180": 196
+      },
+      "mensRS": {
+        "60": 390.68,
+        "96": 274.07,
+        "120": 235.8,
+        "144": 210.69,
+        "180": 186.15
+      }
+    },
+    "3_bat": {
+      "prix": 13900,
+      "remise": 2000,
+      "mens": {
+        "60": 287.32,
+        "96": 201.56,
+        "120": 160.68,
+        "144": 154.95,
+        "180": 136.9
+      },
+      "mensRS": {
+        "60": 245.98,
+        "96": 172.56,
+        "120": 148.47,
+        "144": 132.65,
+        "180": 117.21
+      }
+    },
+    "6_bat": {
+      "prix": 19900,
+      "remise": 2000,
+      "mens": {
+        "60": 411.35,
+        "96": 288.56,
+        "120": 248.27,
+        "144": 221.83,
+        "180": 196
+      },
+      "mensRS": {
+        "60": 370.01,
+        "96": 259.56,
+        "120": 223.32,
+        "144": 199.54,
+        "180": 176.3
+      }
+    },
+    "9_bat": {
+      "prix": 23900,
+      "remise": 2000,
+      "mens": {
+        "60": 494.03,
+        "96": 346.57,
+        "120": 298.18,
+        "144": 266.42,
+        "180": 235.4
+      },
+      "mensRS": {
+        "60": 452.69,
+        "96": 317.57,
+        "120": 273.23,
+        "144": 244.13,
+        "180": 215.7
+      }
+    }
+  },
+  "territoires": {
+    "France Metropolitaine": {
+      "prime_annee": 1,
+      "productible": 1150,
+      "tarif_rachat": [
+        {
+          "min": 0,
+          "max": 3,
+          "tarif": 0.04
+        },
+        {
+          "min": 4,
+          "max": 9,
+          "tarif": 0.04
+        },
+        {
+          "min": 10,
+          "max": 36,
+          "tarif": 0.0473
+        },
+        {
+          "min": 37,
+          "max": 100,
+          "tarif": 0.0473
+        },
+        {
+          "min": 101,
+          "max": 500,
+          "tarif": 0
+        }
+      ],
+      "primes": [
+        {
+          "min": 0,
+          "max": 3,
+          "montant_euros_par_wc": 0.08
+        },
+        {
+          "min": 4,
+          "max": 9,
+          "montant_euros_par_wc": 0.08
+        },
+        {
+          "min": 10,
+          "max": 36,
+          "montant_euros_par_wc": 0.12
+        },
+        {
+          "min": 37,
+          "max": 100,
+          "montant_euros_par_wc": 0.06
+        },
+        {
+          "min": 101,
+          "max": 500,
+          "montant_euros_par_wc": 0
+        }
+      ]
+    },
+    "Corse": {
+      "prime_annee": 2,
+      "productible": 1400,
+      "tarif_rachat": [
+        {
+          "min": 0,
+          "max": 3,
+          "tarif": 0.1661
+        },
+        {
+          "min": 4,
+          "max": 9,
+          "tarif": 0.1661
+        },
+        {
+          "min": 10,
+          "max": 36,
+          "tarif": 0.0902
+        },
+        {
+          "min": 37,
+          "max": 100,
+          "tarif": 0.0902
+        },
+        {
+          "min": 101,
+          "max": 500,
+          "tarif": 0.139
+        }
+      ],
+      "primes": [
+        {
+          "min": 0,
+          "max": 3,
+          "montant_euros_par_wc": 1.15
+        },
+        {
+          "min": 4,
+          "max": 9,
+          "montant_euros_par_wc": 0.65
+        },
+        {
+          "min": 10,
+          "max": 36,
+          "montant_euros_par_wc": 0.33
+        },
+        {
+          "min": 37,
+          "max": 100,
+          "montant_euros_par_wc": 0.44
+        },
+        {
+          "min": 101,
+          "max": 500,
+          "montant_euros_par_wc": 0
+        }
+      ]
+    },
+    "Reunion": {
+      "prime_annee": 2,
+      "productible": 1450,
+      "tarif_rachat": [
+        {
+          "min": 0,
+          "max": 3,
+          "tarif": 0.1756
+        },
+        {
+          "min": 4,
+          "max": 9,
+          "tarif": 0.1756
+        },
+        {
+          "min": 10,
+          "max": 36,
+          "tarif": 0.0902
+        },
+        {
+          "min": 37,
+          "max": 100,
+          "tarif": 0.0902
+        },
+        {
+          "min": 101,
+          "max": 500,
+          "tarif": 0.1596
+        }
+      ],
+      "primes": [
+        {
+          "min": 0,
+          "max": 3,
+          "montant_euros_par_wc": 1.55
+        },
+        {
+          "min": 4,
+          "max": 9,
+          "montant_euros_par_wc": 0.93
+        },
+        {
+          "min": 10,
+          "max": 36,
+          "montant_euros_par_wc": 0.54
+        },
+        {
+          "min": 37,
+          "max": 100,
+          "montant_euros_par_wc": 0.38
+        },
+        {
+          "min": 101,
+          "max": 500,
+          "montant_euros_par_wc": 0
+        }
+      ]
+    },
+    "Guyane": {
+      "prime_annee": 2,
+      "productible": 1400,
+      "tarif_rachat": [
+        {
+          "min": 0,
+          "max": 3,
+          "tarif": 0.1804
+        },
+        {
+          "min": 4,
+          "max": 9,
+          "tarif": 0.1804
+        },
+        {
+          "min": 10,
+          "max": 36,
+          "tarif": 0.0712
+        },
+        {
+          "min": 37,
+          "max": 100,
+          "tarif": 0.0712
+        },
+        {
+          "min": 101,
+          "max": 500,
+          "tarif": 0.1408
+        }
+      ],
+      "primes": [
+        {
+          "min": 0,
+          "max": 3,
+          "montant_euros_par_wc": 1.69
+        },
+        {
+          "min": 4,
+          "max": 9,
+          "montant_euros_par_wc": 1.02
+        },
+        {
+          "min": 10,
+          "max": 36,
+          "montant_euros_par_wc": 0.77
+        },
+        {
+          "min": 37,
+          "max": 100,
+          "montant_euros_par_wc": 0.52
+        },
+        {
+          "min": 101,
+          "max": 500,
+          "montant_euros_par_wc": 0
+        }
+      ]
+    },
+    "Martinique": {
+      "prime_annee": 2,
+      "productible": 1550,
+      "tarif_rachat": [
+        {
+          "min": 0,
+          "max": 3,
+          "tarif": 0.1804
+        },
+        {
+          "min": 4,
+          "max": 9,
+          "tarif": 0.1804
+        },
+        {
+          "min": 10,
+          "max": 36,
+          "tarif": 0.0712
+        },
+        {
+          "min": 37,
+          "max": 100,
+          "tarif": 0.0712
+        },
+        {
+          "min": 101,
+          "max": 500,
+          "tarif": 0.1586
+        }
+      ],
+      "primes": [
+        {
+          "min": 0,
+          "max": 3,
+          "montant_euros_par_wc": 1.72
+        },
+        {
+          "min": 4,
+          "max": 9,
+          "montant_euros_par_wc": 1.04
+        },
+        {
+          "min": 10,
+          "max": 36,
+          "montant_euros_par_wc": 0.78
+        },
+        {
+          "min": 37,
+          "max": 100,
+          "montant_euros_par_wc": 0.53
+        },
+        {
+          "min": 101,
+          "max": 500,
+          "montant_euros_par_wc": 0
+        }
+      ]
+    },
+    "Guadeloupe": {
+      "prime_annee": 2,
+      "productible": 1550,
+      "tarif_rachat": [
+        {
+          "min": 0,
+          "max": 3,
+          "tarif": 0.1804
+        },
+        {
+          "min": 4,
+          "max": 9,
+          "tarif": 0.1804
+        },
+        {
+          "min": 10,
+          "max": 36,
+          "tarif": 0.0712
+        },
+        {
+          "min": 37,
+          "max": 100,
+          "tarif": 0.0712
+        },
+        {
+          "min": 101,
+          "max": 500,
+          "tarif": 0.1586
+        }
+      ],
+      "primes": [
+        {
+          "min": 0,
+          "max": 3,
+          "montant_euros_par_wc": 1.79
+        },
+        {
+          "min": 4,
+          "max": 9,
+          "montant_euros_par_wc": 1.09
+        },
+        {
+          "min": 10,
+          "max": 36,
+          "montant_euros_par_wc": 0.82
+        },
+        {
+          "min": 37,
+          "max": 100,
+          "montant_euros_par_wc": 0.56
+        },
+        {
+          "min": 101,
+          "max": 500,
+          "montant_euros_par_wc": 0
+        }
+      ]
+    }
+  }
+}
