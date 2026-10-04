@@ -1351,7 +1351,7 @@ function finishDraft(){const pts=dedupe(S.draft);S.draft=[];S.hover=null;updateD
   if(pts.length<3){draw();toast('Il faut au moins 3 points.');return;}
   snapshot();
   if(S.mode==='obstacle'){const o={id:'o'+(S.seq++),pts,kind:S.obsKind||'velux'};S.obstacles.push(o);S.sel={type:'obs',id:o.id};S.lastObsAt=Date.now();}
-  else{const last=S.pans[S.pans.length-1];const p={id:'p'+(S.seq++),name:'Pan '+(S.pans.length+1),pts,slope:last?last.slope:35,eaveH:last?last.eaveH:5,pose:'auto',off:[],color:S.colorIdx++};
+  else{const last=S.pans[S.pans.length-1];const lastS=[...S.pans].reverse().find(q=>!isFlat(q));const p={id:'p'+(S.seq++),name:'Pan '+(S.pans.length+1),pts,slope:lastS?lastS.slope:17,eaveH:last?last.eaveH:5,pose:'auto',off:[],color:S.colorIdx++};
     p.eave=defaultEave(pts);S.pans.push(p);S.sel={type:'pan',id:p.id};if(!isFlat(p)){S.sub='eave';S.subAuto=true;}}
   changed();renderEditor();setHint();renderQuick();}
 
@@ -1591,6 +1591,10 @@ window.FRH_report=()=>{const R0=S.report||{},sig=repSig();return{img2d:(R0['2d']
 /* ---------- liaison avec la simulation ---------- */
 function setTarget(v){if(![3,6,9].includes(v))return;S.forced.target=v;S.forced.on=true;$('fTarget').value=v;renderForced();save();if(S.forced.placed&&S.mpp&&S.pans.length)placeForced(true);else emitCalep();}
 $('fSeg').addEventListener('click',e=>{const b=e.target.closest('.tb');if(b)setTarget(+b.dataset.v);});
+/* sans coordonnées GPS, la référence d'ensoleillement suit le territoire choisi dans la simulation (hémisphère sud à La Réunion : les pans nord produisent le plus) */
+const TERR_SITE={'Martinique':'Martinique','Guadeloupe':'Guadeloupe','Guyane':'Guyane','Reunion':'La Réunion (littoral)','Corse':'Ajaccio / Bastia'};
+window.addEventListener('frh:terr',e=>{const k=TERR_SITE[e.detail&&e.detail.terr];if(!k||S.mod.gpsLat!=null)return;const i=SITES.findIndex(x=>x[0]===k);if(i<0||S.mod.site===i)return;
+  const x=SITES[i];S.mod.site=i;S.mod.lat=x[1];S.mod.ghi=x[2];$('mSite').value=i;$('mLat').value=x[1];$('mGhi').value=x[2];S.pans.forEach(p=>{if(isFlat(p))p.off=[];});changed();if(S.forced.placed&&S.mpp)placeForced(true);});
 window.addEventListener('frh:power',e=>{const v=e.detail&&e.detail.kwc;if(v&&v!==S.forced.target)setTarget(v);});
 /* empreinte de la toiture : si elle change en mode puissance imposée, les panneaux sont reposés automatiquement */
 function geoSig(){return JSON.stringify([S.mpp,S.forced.target,S.mod.w,S.mod.h,S.mod.wp,S.mod.margin,S.mod.gap,S.pans.map(p=>[p.pts,p.slope,p.eave,p.tilt,isFlat(p)]),S.obstacles.map(o=>o.pts)]);}
@@ -1666,11 +1670,11 @@ document.addEventListener('paste',e=>{const it=[...(e.clipboardData?.items||[])]
 /* exemple : vue aérienne synthétique d'une maison en L avec garage (20 px = 1 m) */
 const EX_K=20;
 const EX_PANS=[
-  {name:'Nord',pts:[[6,8],[26,8],[26,12],[6,12]],eave:0,slope:35,eaveH:5},
-  {name:'Sud-ouest',pts:[[6,12],[18,12],[14,16],[6,16]],eave:2,slope:35,eaveH:5},
-  {name:'Sud-est',pts:[[18,12],[26,12],[26,16],[22,16]],eave:2,slope:35,eaveH:5},
-  {name:'Aile ouest',pts:[[14,16],[18,12],[18,24],[14,24]],eave:3,slope:35,eaveH:5},
-  {name:'Aile est',pts:[[18,12],[22,16],[22,24],[18,24]],eave:1,slope:35,eaveH:5},
+  {name:'Nord',pts:[[6,8],[26,8],[26,12],[6,12]],eave:0,slope:17,eaveH:5},
+  {name:'Sud-ouest',pts:[[6,12],[18,12],[14,16],[6,16]],eave:2,slope:17,eaveH:5},
+  {name:'Sud-est',pts:[[18,12],[26,12],[26,16],[22,16]],eave:2,slope:17,eaveH:5},
+  {name:'Aile ouest',pts:[[14,16],[18,12],[18,24],[14,24]],eave:3,slope:17,eaveH:5},
+  {name:'Aile est',pts:[[18,12],[22,16],[22,24],[18,24]],eave:1,slope:17,eaveH:5},
   {name:'Garage (toit plat)',pts:[[30,10],[36,10],[36,16],[30,16]],eave:2,slope:2,eaveH:3}];
 const EX_OBS=[{pts:[[10,9.4],[11,9.4],[11,10.4],[10,10.4]],kind:'chem'},{pts:[[8.6,13.3],[9.8,13.3],[9.8,14.7],[8.6,14.7]],kind:'velux'}];
 function makeExample(){const k=EX_K,W=42*k,H=30*k,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
@@ -2027,7 +2031,7 @@ function compute(){syncCal();
     useful,eta,saveYr1,sellYr1,newBill,flows,payback,gain20,nom};}
 
 /* ---------- affichage ---------- */
-function render(){const R=compute();renderInputs(R);renderCal();
+function render(){const R=compute();if(S.terr!==render.lastTerr){render.lastTerr=S.terr;window.dispatchEvent(new CustomEvent('frh:terr',{detail:{terr:S.terr}}));}renderInputs(R);renderCal();
   const saveMonth=(S.bill-R.newBill);
   const sellMonth=R.sellYr1/12,sav20=R.flows.reduce((a,f)=>a+(f.sv||0),0),sell20=R.flows.reduce((a,f)=>a+(f.sl||0),0);
   $('kTot').textContent=eur(saveMonth+sellMonth);$('kTotS').textContent=`soit ${eur((saveMonth+sellMonth)*12)} la 1ʳᵉ année`;
