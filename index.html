@@ -138,6 +138,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,label.btn:focus-wi
 .small a{color:var(--accent)}
 .flabelc{font-weight:600;font-size:12.5px}
 #fSeg .tb{padding:6px 12px}
+.panrow .py{display:block;font:500 11px var(--body);color:var(--muted,#6b7280);margin-top:1px}
 #tbPlace{margin-left:auto}
 .btn.pulse{animation:frhPulse 1.6s ease-in-out infinite}
 @keyframes frhPulse{0%,100%{box-shadow:0 0 0 0 rgba(217,119,6,.55)}50%{box-shadow:0 0 0 6px rgba(217,119,6,0)}}
@@ -995,32 +996,36 @@ function layoutFlat(pan){const m=S.mpp;const poly=pan.pts.map(p=>({x:p.x*m,y:p.y
 function layoutPan(pan){
   if(!S.mpp||pan.pts.length<3)return{panels:[],area:0};
   if(isFlat(pan))return layoutFlat(pan);
+  if(S.forced.on&&pan.lay&&!pan.noLay){const r=layoutSloped(pan,pan.lay.pose,pan.lay);r.auto=pan.pose!=='portrait'&&pan.pose!=='paysage';return r;}
   /* pose automatique : on essaie portrait et paysage, on garde celle qui loge le plus de modules (portrait si égalité) */
   if(pan.pose!=='portrait'&&pan.pose!=='paysage'){const a=layoutSloped(pan,'portrait'),b=layoutSloped(pan,'paysage');const r=b.panels.length>a.panels.length?b:a;r.auto=true;return r;}
   return layoutSloped(pan,pan.pose);}
-function layoutSloped(pan,pose){
+function layoutSloped(pan,pose,fix){
   const F=frame(pan);const poly=F.P.map(F.toUV);const area=Math.abs(areaSigned(poly));
   const mo=S.mod,W=mo.w/1000,H=mo.h/1000,g=Math.max(0,mo.gap)/100,mg=Math.max(0,mo.margin)/100;
   if(!(W>0.2&&H>0.2))return{panels:[],area};
   const du=pose==='paysage'?H:W,dv=pose==='paysage'?W:H;
   const obs=S.obstacles.map(o=>o.pts.map(p=>F.toUV({x:p.x*S.mpp,y:p.y*S.mpp})));
   let umin=Infinity,umax=-Infinity,vmin=Infinity,vmax=-Infinity;poly.forEach(p=>{umin=Math.min(umin,p.x);umax=Math.max(umax,p.x);vmin=Math.min(vmin,p.y);vmax=Math.max(vmax,p.y);});
-  let best=[];
-  /* rangées calées sous le faîtage : la 1re rangée touche la marge haute, les suivantes descendent vers la gouttière */
-  for(const fu of [0,.25,.5,.75]){
+  let best=[],bestTop=-1,bF={fu:0,fv:0};
+  /* rangées calées sous le faîtage : la 1re rangée touche la marge haute, les suivantes descendent vers la gouttière.
+     On essaie aussi de petits décalages vers le bas (faîtage tracé pas tout à fait parallèle à la gouttière) */
+  const FU=fix?[fix.fu]:[0,.25,.5,.75],FV=fix?[fix.fv]:FVS.filter(x=>x<dv+g);
+  for(const fv of FV)for(const fu of FU){
     const res=[];
-    for(let v=vmax-mg-dv-0.005;v>=vmin+mg-1e-9;v-=dv+g)
+    for(let v=vmax-mg-dv-0.005-fv;v>=vmin+mg-1e-9;v-=dv+g)
       for(let u=umin+mg+0.005+fu*(du+g);u+du<=umax-mg+1e-9;u+=du+g){
         const ex=rect(u-mg,v-mg,u+du+mg,v+dv+mg);
         if(!rectContained(ex,poly))continue;
         if(obs.some(o=>polysOverlap(o,ex)))continue;
         res.push({u,v});
       }
-    if(res.length>best.length)best=res;
+    let top=0;if(res.length){const vt=Math.max(...res.map(r=>r.v));top=res.filter(r=>r.v>vt-1e-6).length;}
+    if(res.length>best.length||(res.length===best.length&&res.length&&top>bestTop)){best=res;bestTop=top;bF={fu,fv};}
   }
   const panels=best.map(({u,v})=>{const key=pose[0]+u.toFixed(2)+':'+v.toFixed(2);
     return{key,u,v,off:isOff(pan,key),plan:[{x:u,y:v},{x:u+du,y:v},{x:u+du,y:v+dv},{x:u,y:v+dv}].map(F.fromUV)};});
-  return{panels,area,pose};
+  return{panels,area,pose,fu:bF.fu,fv:bF.fv,du,dv,vmax:vmax-mg};
 }
 const poseLabel=p=>{if(isFlat(p))return'paysage sur supports';const L=S.layouts[p.id];const ps=(L&&L.pose)||p.pose;return (p.pose==='portrait'||p.pose==='paysage')?ps:`${ps} (auto)`;};
 /* raccords entre pans : un sommet posé sur le contour d'un autre pan doit avoir la même hauteur */
@@ -1296,7 +1301,7 @@ function renderCalib(){const s=$('calibStatus');setTimeout(renderSums,0);
 function renderList(){const box=$('panList');
   if(!S.pans.length){box.innerHTML='<p class="empty">Aucun pan. Choisissez « Tracer un pan » puis cliquez les coins d\'un versant sur la capture. Un toit en L se dessine en 4 à 6 pans.</p>';}
   else box.innerHTML=S.pans.map(p=>{const on=S.sel&&S.sel.type==='pan'&&S.sel.id===p.id;const o=orientOf(p);const bad=S.mpp&&panJoins(p).some(j=>j.max>=0.05);
-    return `<button type="button" class="panrow${on?' on':''}" data-id="${p.id}"><i class="sw" style="background:${COLORS[p.color%COLORS.length]}"></i><span class="pn">${esc(p.name)}</span><span class="pm">${p.slope>0?o.short:'Plat'} · ${nf(p.slope)}°</span><span class="pc${bad?' bad':''}" ${bad?'title="Mal raccordé à un pan voisin"':''}>${S.mpp?activeCount(p)+' mod.'+(bad?' · écart':''):'–'}</span></button>`;}).join('');
+    return `<button type="button" class="panrow${on?' on':''}" data-id="${p.id}"><i class="sw" style="background:${COLORS[p.color%COLORS.length]}"></i><span class="pn">${esc(p.name)}${S.mpp&&p.pts.length>=3?`<small class="py">${nf(panSpec(p))} kWh/kWc</small>`:''}</span><span class="pm">${p.slope>0?o.short:'Plat'} · ${nf(p.slope)}°</span><span class="pc${bad?' bad':''}" ${bad?'title="Mal raccordé à un pan voisin (voir le détail en sélectionnant le pan)"':''}>${S.mpp?activeCount(p)+' mod.':'–'}</span></button>`;}).join('');
   const n=S.obstacles.length;$('obsInfo').textContent=n?`${n} obstacle${n>1?'s':''} (cliquez-en un sur le plan pour le modifier).`:'';}
 $('panList').addEventListener('click',e=>{const b=e.target.closest('.panrow');if(b){if(S.view3d)show2d();select('pan',b.dataset.id);}});
 function renderQuick(){const q=$('quickbar');const it=selItem();
@@ -1384,17 +1389,34 @@ $('mSrc').addEventListener('change',()=>{S.mod.src=$('mSrc').value;changed();ren
 
 /* ---------- puissance imposée ---------- */
 function panSpec(p){if(p.pts.length<3)return 0;const {tilt,gam}=panAngles(p);return specMonthly(tilt,gam).mon.reduce((a,b)=>a+b,0);}
+/* choisit, pour k modules, la grille (portrait/paysage, décalages) qui donne le bloc le plus compact et le plus proche du faîtage */
+const FVS=[0,.01,.02,.03,.05,.08,.12,.16,.2,.25,.3,.4,.5,.6,.7,.8,1,1.2,1.4,1.6,1.8];
+function rowsOf(panels){const rows=[];panels.slice().sort((a,b)=>b.v-a.v).forEach(pn=>{const r=rows.find(r=>Math.abs(r.v-pn.v)<1e-3);if(r)r.items.push(pn);else rows.push({v:pn.v,items:[pn]});});return rows;}
+function pickBlock(L,k){const rows=rowsOf(L.panels);if(!rows.length)return null;
+  const sel=[];let need=k,cu=null,used=0;
+  for(const r of rows){if(need<=0)break;const it=r.items.slice();
+    if(cu===null){const um=L.panels.map(x=>x.u);cu=(Math.min(...um)+Math.max(...um))/2;}
+    it.sort((a,b)=>Math.abs(a.u-cu)-Math.abs(b.u-cu));const tk=it.slice(0,need);sel.push(...tk);need-=tk.length;used++;}
+  return{sel,need,used,gap:L.vmax-(rows[0].v+L.dv)};}
+function bestForced(p,k){const poses=(p.pose==='portrait'||p.pose==='paysage')?[p.pose]:['portrait','paysage'];let best=null;
+  for(const pose of poses){const pd=(pose==='paysage'?S.mod.w:S.mod.h)/1000+Math.max(0,S.mod.gap)/100;for(const fv of FVS.filter(x=>x<pd))for(const fu of [0,.25,.5,.75]){
+    const L=layoutSloped(p,pose,{fu,fv});const b=pickBlock(L,k);if(!b)continue;
+    const sc=[b.need,b.used,Math.round(b.gap*100),pose==='portrait'?0:1];
+    const lt=()=>{for(let i=0;i<sc.length;i++){if(sc[i]!==best.sc[i])return sc[i]<best.sc[i];}return false;};if(!best||lt())best={sc,pose,fu,fv,keys:b.sel.map(x=>x.key),n:b.sel.length};}}
+  return best;}
 async function placeForced(auto){if(!S.pans.some(p=>p.pts.length>=3)){if(!auto)toast('Tracez d\'abord les pans de la toiture.');return;}if(!S.mpp){if(!auto)toast('Définissez d\'abord l\'échelle.');return;}
   if(usePvgis()){const ps=S.pans.filter(p=>p.pts.length>=3).map(p=>{const a=panAngles(p);return pvFetch(a.tilt,a.gam);});if(ps.length){if(!auto)toast('Interrogation de PVGIS…');await Promise.all(ps);}}
   const target=parseFloat(String($('fTarget').value).replace(',','.'));if(!(target>0)){toast('Saisissez une puissance en kWc.');return;}
-  if(!auto)snapshot();S.forced.target=target;S.pans.forEach(p=>p.on=[]);
+  if(!auto)snapshot();S.forced.target=target;S.pans.forEach(p=>{p.on=[];delete p.lay;});
   /* pose choisie automatiquement : sur chaque pan incliné, l'orientation des modules qui en loge le plus */
   S.pans.forEach(p=>{if(p.pts.length>=3&&!isFlat(p))p.pose='auto';});
   recalc();
   const wp=S.mod.wp,N=Math.max(1,Math.floor(target*1000/wp+1e-9));
   const ranked=S.pans.map(p=>({p,spec:panSpec(p),L:S.layouts[p.id]})).filter(x=>x.L&&x.L.panels.length).sort((a,b)=>b.spec-a.spec);
   let left=N;const used=[];
-  ranked.forEach(({p,L})=>{if(left<=0)return;const k=Math.min(left,L.panels.length);left-=k;
+  ranked.forEach(({p,L})=>{if(left<=0)return;const k=Math.min(left,L.panels.length);
+    if(!isFlat(p)){const b=bestForced(p,k);if(b&&b.n>0){p.lay={pose:b.pose,fu:b.fu,fv:b.fv};p.on=b.keys.slice();left-=b.n;used.push([p.name,b.n]);return;}}
+    left-=k;
     /* rangée par rangée depuis le faîtage (depuis le sud sur toit plat), chaque rangée centrée sur le même axe : bloc compact */
     const rows={};L.panels.forEach(pn=>{const r=pn.v.toFixed(2);(rows[r]=rows[r]||[]).push(pn);});
     const order=Object.keys(rows).map(Number).sort((a,b)=>L.flat&&south()?a-b:b-a);
@@ -1405,14 +1427,14 @@ async function placeForced(auto){if(!S.pans.some(p=>p.pts.length>=3)){if(!auto)t
   if(left>0)toast(`Toiture insuffisante : ${N-left} modules posés sur ${N} demandés`);else if(!auto)toast(`${N} modules posés`);}
 function renderForced(){const f=S.forced;document.querySelectorAll('#fSeg .tb').forEach(b=>b.classList.toggle('on',+b.dataset.v===f.target));$('fOn').checked=!!f.on;$('fBox').hidden=!f.on;$('fTarget').value=f.target??6;const stale=f.placed&&f.sig!==geoSig();['fPlace','tbPlace'].forEach(id=>{const b=$(id);b.textContent=f.placed?'Reposer les panneaux':'Poser les panneaux';b.classList.toggle('pulse',!f.placed&&S.pans.some(p=>p.pts.length>=3)||stale);});$('tbPlace').hidden=!f.on;if(!f.on){$('fInfo').innerHTML='';return;}
   const wp=S.mod.wp,t=parseFloat(String($('fTarget').value).replace(',','.'))||0,N=Math.floor(t*1000/wp+1e-9);
-  let cap=0;S.pans.forEach(p=>{const L=S.layouts[p.id];if(L)cap+=L.panels.length;});
+  let cap=0;S.pans.forEach(p=>{p.noLay=true;const L=layoutPan(p);delete p.noLay;if(L)cap+=L.panels.length;});
   const ranked=S.pans.filter(p=>p.pts.length>=3).map(p=>({p,spec:panSpec(p)})).sort((a,b)=>b.spec-a.spec);
   let h=`${N} modules de ${nf(wp)} Wc = <b>${nf(N*wp/1000,2)} kWc</b>`+(N*wp/1000<t-1e-9?` (arrondi en dessous de ${nf(t,2)} kWc)`:'')+`<br>Capacité maximale de la toiture : ${cap} modules = ${nf(cap*wp/1000,2)} kWc`;
   if(ranked.length&&S.mpp)h+='<br>Ordre de remplissage : '+ranked.map(x=>`${esc(x.p.name)} (${nf(x.spec)} kWh/kWc, ${poseLabel(x.p)})`).join(' › ')+(f.placed?'':'<br>La pose portrait ou paysage de chaque pan sera choisie automatiquement pour loger le plus de modules.');
   if(f.placed){const n=totals().n;h+=`<br>Posés actuellement : <b>${n} modules = ${nf(n*wp/1000,2)} kWc</b>`;if(f.last&&n!==f.last.placed)h+=' <span class="warn">(la toiture ou la pose a changé : cliquez « Reposer les panneaux » pour recalculer)</span>';}
   else h+='<br><span class="warn">Aucun panneau posé pour l\'instant.</span>';
   $('fInfo').innerHTML=h;}
-$('fOn').addEventListener('change',()=>{snapshot();S.forced.on=$('fOn').checked;S.forced.placed=false;S.pans.forEach(p=>p.on=[]);changed();renderForced();setHint();});
+$('fOn').addEventListener('change',()=>{snapshot();S.forced.on=$('fOn').checked;S.forced.placed=false;S.pans.forEach(p=>{p.on=[];delete p.lay;});changed();renderForced();setHint();});
 $('fPlace').addEventListener('click',()=>placeForced(false));$('tbPlace').addEventListener('click',()=>placeForced(false));
 /* ---------- liaison avec la simulation ---------- */
 function setTarget(v){if(![3,6,9].includes(v))return;S.forced.target=v;S.forced.on=true;$('fTarget').value=v;renderForced();save();if(S.forced.placed&&S.mpp&&S.pans.length)placeForced(true);else emitCalep();}
