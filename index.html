@@ -641,7 +641,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14p
           <div class="field"><label for="cMail">E-mail <span class="opt">facultatif</span></label><input type="email" id="cMail" autocomplete="off"></div>
         </div>
         <div class="two">
-          <div class="field"><label for="cCom">Commercial</label><input type="text" id="cCom" autocomplete="off"></div>
+          <div class="field"><label for="cCom">Conseiller</label><input type="text" id="cCom" autocomplete="off"></div>
           <div class="field"><label for="cDate">Date de l'étude</label><input type="date" id="cDate"></div>
         </div>
         <div class="btnrow"><button type="button" class="btn" id="cNew">Nouveau client</button></div>
@@ -868,14 +868,15 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14p
       <section class="card">
         <h2>Avant de créer le rapport</h2>
         <ul class="rchecks" id="rChecks"></ul>
-        <div class="btnrow" style="margin-top:12px"><button type="button" class="btn acc big" id="rGo">Créer le rapport PDF</button></div>
+        <div class="btnrow" style="margin-top:12px"><button type="button" class="btn acc big" id="rGo">Télécharger le rapport PDF</button><button type="button" class="btn big" id="rView">Aperçu</button></div>
+        <p class="small" id="rFile"></p>
         <p class="small" id="rGoInfo"></p>
       </section>
     </div>
   </div>
   <div class="repov" id="repOverlay" hidden>
-    <div class="repbar"><b id="repTitle"></b><span class="small">Dans la fenêtre d'impression, choisissez « Enregistrer au format PDF », marges « Aucune », graphiques d'arrière-plan activés.</span>
-      <div class="btnrow"><button type="button" class="btn acc" id="repPrint">Enregistrer en PDF</button><button type="button" class="btn" id="repClose">Fermer</button></div></div>
+    <div class="repbar"><b id="repTitle"></b><span class="small">Aperçu du rapport tel qu'il sera enregistré.</span>
+      <div class="btnrow"><button type="button" class="btn acc" id="repPrint">Télécharger le PDF</button><button type="button" class="btn" id="repClose">Fermer</button></div></div>
     <iframe id="repFrame" title="Aperçu du rapport"></iframe>
   </div>
 
@@ -891,7 +892,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14p
               <tbody id="pRows"></tbody>
             </table>
           </div>
-          <p class="small">Prix TTC proposés au client. La remise RS est le montant que le commercial peut accorder avec le bouton RS. La prime est calculée automatiquement d'après les tarifs ci-dessous.</p>
+          <p class="small">Prix TTC proposés au client. La remise RS est le montant que le conseiller peut accorder avec le bouton RS. La prime est calculée automatiquement d'après les tarifs ci-dessous.</p>
         </section>
         <section class="card">
           <h2>Mensualités du financeur</h2>
@@ -942,8 +943,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14p
       </main>
       <aside class="side">
         <section class="card">
-          <h2>Publier pour tous les commerciaux</h2>
-          <p class="small">Les prix, mensualités et tarifs modifiés ici ne valent que sur cet appareil. Pour les donner à toute l'équipe, téléchargez le fichier <b>tarifs.json</b> et remplacez-le sur GitHub : chaque commercial les recevra au prochain chargement.</p>
+          <h2>Publier pour tous les conseillers</h2>
+          <p class="small">Les prix, mensualités et tarifs modifiés ici ne valent que sur cet appareil. Pour les donner à toute l'équipe, téléchargez le fichier <b>tarifs.json</b> et remplacez-le sur GitHub : chaque conseiller les recevra au prochain chargement.</p>
           <div class="btnrow">
             <button type="button" class="btn acc" id="tDown">Télécharger tarifs.json</button>
             <button type="button" class="btn" id="tCopy">Copier le contenu</button>
@@ -2713,7 +2714,7 @@ function buildReport(){const d=repData(),R=d.R,C=RC,cli=d.cli,ag=d.ag;
 function repChecks(){const d=repData(),out=[];const cli=S.client;
   out.push(cli.nom?['ok',`Client : <b>${esc(cliName())}</b>`]:['bad','Nom du client à saisir (onglet 1. Informations)']);
   out.push(cli.adr?['ok','Adresse du chantier renseignée']:['warn','Adresse du chantier non renseignée']);
-  out.push(getCom()?['ok',`Commercial : ${esc(getCom())}`]:['warn','Nom du commercial non renseigné']);
+  out.push(getCom()?['ok',`Conseiller : ${esc(getCom())}`]:['warn','Nom du conseiller non renseigné']);
   if(!d.K)out.push(['warn','Aucun panneau posé sur la toiture : production calculée avec le productible moyen du territoire']);
   else if(Math.abs(d.K.kwc-d.P)>0.01)out.push(['warn',`La toiture porte ${nf(d.K.kwc,2)} kWc pour ${d.P} kWc simulés`]);
   else out.push(['ok',`Toiture : ${d.K.n} panneaux posés, productible ${nf(d.K.yield)} kWh/kWc`]);
@@ -2728,11 +2729,54 @@ function renderRep(){document.querySelectorAll('#rPay button').forEach(b=>b.clas
 $('rPay').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.payMode=b.dataset.v;save();renderRep();});
 $('rOpt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.finOpt=b.dataset.v;save();renderRep();});
 let repDoc=null;
-$('rGo').addEventListener('click',()=>{const r=buildReport();repDoc=r;const ov=$('repOverlay'),fr=$('repFrame');ov.hidden=false;document.body.style.overflow='hidden';
-  $('repTitle').textContent=r.title+'.pdf';fr.srcdoc=r.html;});
+function repFileName(){const c=S.client,R=compute();const parts=["Rapport d'etude",(c.civ||'').replace(/\./g,''),c.nom,c.prenom,R.P+'kWc'+(R.nom>0?' batterie':'')].map(s=>String(s||'').trim()).filter(Boolean);
+  /* nom de fichier sans accents ni caractères spéciaux : accepté partout (Windows, Mac, messageries) */
+  return parts.join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’‘]/g,"'").replace(/[^A-Za-z0-9' .,_()-]+/g,'-').replace(/\s+/g,' ')+'.pdf';}
+const LIBS={h2c:'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',pdf:'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'};
+function loadScript(src){return new Promise((ok,ko)=>{if(document.querySelector(`script[src="${src}"]`)&&(src===LIBS.h2c?window.html2canvas:window.jspdf))return ok();const s=document.createElement('script');s.src=src;s.onload=()=>ok();s.onerror=()=>ko(new Error('script'));document.head.appendChild(s);});}
+/* les graphiques SVG sont rendus comme des images : on y recopie les styles calculés (sinon ils perdent tailles, couleurs et polices) */
+const GF_SVG='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=block';let svgFontCache=null;
+/* police Inter intégrée dans chaque graphique (une image SVG n'a pas accès aux polices de la page) */
+async function svgFontCss(){if(svgFontCache!==null)return svgFontCache;try{const css=await (await fetch(GF_SVG)).text();const blocks=css.match(/@font-face\s*{[^}]*}/g)||[];const out=[];
+  for(const b of blocks){if(!/font-family:\s*['"]?Inter['"]?\s*;/.test(b))continue;const ur=(b.match(/unicode-range:\s*([^;]+);/)||[])[1]||'';if(ur&&!/U\+0000-00FF/i.test(ur))continue;const url=((b.match(/url\(([^)]+)\)/)||[])[1]||'').replace(/['"]/g,'');const w=(b.match(/font-weight:\s*(\d+)/)||[])[1]||'400';if(!url)continue;
+    const blob=await (await fetch(url)).blob();const du=await new Promise(ok=>{const r=new FileReader();r.onload=()=>ok(r.result);r.readAsDataURL(blob);});out.push(`@font-face{font-family:'InterSVG';font-style:normal;font-weight:${w};src:url(${du}) format('woff2');}`);}
+  svgFontCache=out.join('');}catch(e){svgFontCache='';}return svgFontCache;}
+function inlineSvgStyles(doc,fontCss){if(fontCss)doc.querySelectorAll('svg').forEach(s=>{const st=doc.createElementNS('http://www.w3.org/2000/svg','style');st.textContent=fontCss;s.insertBefore(st,s.firstChild);});const W=doc.defaultView;doc.querySelectorAll('svg *').forEach(el=>{if(['defs','linearGradient','stop','g'].includes(el.tagName))return;const cs=W.getComputedStyle(el);
+  if(['defs','linearGradient','stop','g','style'].includes(el.tagName))return;if(el.tagName==='text'||el.tagName==='tspan'){el.setAttribute('font-family',"InterSVG, Inter, Helvetica, Arial, sans-serif");['font-size','font-weight','letter-spacing'].forEach(p=>el.setAttribute(p,cs.getPropertyValue(p)));
+    if(cs.textTransform==='uppercase')el.textContent=el.textContent.toUpperCase();}
+  ['fill','stroke','stroke-width','opacity','paint-order','stroke-linejoin','stroke-linecap'].forEach(p=>{const v=cs.getPropertyValue(p);if(v)el.setAttribute(p,v);});});}
+/* chaque graphique SVG est converti en image PNG (police intégrée chargée avant le dessin) */
+async function rasterSvgs(doc){const W=doc.defaultView;const svgs=[...doc.querySelectorAll('.page svg')];
+  for(const s of svgs){const r=s.getBoundingClientRect();if(!r.width||!r.height)continue;const cl=s.cloneNode(true);cl.setAttribute('xmlns','http://www.w3.org/2000/svg');cl.setAttribute('width',r.width);cl.setAttribute('height',r.height);
+    const url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new W.XMLSerializer().serializeToString(cl));
+    const im=new W.Image();im.src=url;try{await im.decode();}catch(e){continue;}await new Promise(ok=>setTimeout(ok,60));
+    const k=3,c=doc.createElement('canvas');c.width=Math.round(r.width*k);c.height=Math.round(r.height*k);const g=c.getContext('2d');g.drawImage(im,0,0,c.width,c.height);
+    await new Promise(ok=>setTimeout(ok,30));g.clearRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);
+    const out=doc.createElement('img');out.src=c.toDataURL('image/png');out.style.cssText=`display:block;width:${r.width}px;height:${r.height}px`;out.className=s.getAttribute('class')||'';
+    try{await out.decode();}catch(e){}s.replaceWith(out);}}
+let pdfBusy=false;
+async function makePdf(btn){if(pdfBusy)return;pdfBusy=true;const lab=btn?btn.textContent:'';const setLab=s=>{if(btn)btn.textContent=s;};
+  try{setLab('Préparation…');await loadScript(LIBS.pdf);
+    const r=buildReport(),name=repFileName();const fr=document.createElement('iframe');fr.setAttribute('aria-hidden','true');fr.style.cssText='position:fixed;left:-12000px;top:0;width:820px;height:1200px;border:0;opacity:0;pointer-events:none';
+    document.body.appendChild(fr);await new Promise(ok=>{fr.onload=ok;fr.srcdoc=r.html.replace(/\u202f/g,'\u00a0');});const doc=fr.contentDocument;
+    doc.body.classList.add('render');const st=doc.createElement('style');st.textContent='.render,.render *{font-feature-settings:normal!important;font-variant-numeric:normal!important}.render{background:#fff!important}.render .page{margin:0!important;box-shadow:none!important}.render .brand,.render .kpi{box-shadow:none!important}.render .brand img{position:relative;z-index:3}.render h1,.render h2,.render .kpi-v,.render .st-v,.render .specs .v,.render .eq .n,.render .opt .om,.render .callout .c-big,.render .callout .c-fig .n{letter-spacing:0!important}';doc.head.appendChild(st);
+    try{await doc.fonts.ready;}catch(e){}await Promise.all([...doc.images].map(im=>im.decode?im.decode().catch(()=>{}):null));await new Promise(ok=>setTimeout(ok,250));
+    /* html2canvas est chargé DANS le cadre du rapport : il dessine alors avec les polices du rapport */
+    await new Promise((ok,ko)=>{const s=doc.createElement('script');s.src=LIBS.h2c;s.onload=ok;s.onerror=()=>ko(new Error('h2c'));doc.head.appendChild(s);});
+    inlineSvgStyles(doc,await svgFontCss());await rasterSvgs(doc);await new Promise(ok=>setTimeout(ok,100));
+    const pages=[...doc.querySelectorAll('.page')];const {jsPDF}=window.jspdf;const pdf=new jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+    for(let i=0;i<pages.length;i++){setLab(`Création du PDF… ${i+1}/${pages.length}`);
+      const cv=await fr.contentWindow.html2canvas(pages[i],{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false,windowWidth:820});
+      if(i)pdf.addPage();pdf.addImage(cv.toDataURL('image/jpeg',0.9),'JPEG',0,0,210,297,undefined,'FAST');}
+    pdf.setProperties({title:name.replace(/\.pdf$/,''),author:agenceOf(S.terr).nom,subject:'Étude photovoltaïque'});
+    const blob=pdf.output('blob');const url=URL.createObjectURL(blob);const lk=document.createElement('a');lk.href=url;lk.download=name;lk.rel='noopener';document.body.appendChild(lk);lk.click();lk.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);fr.remove();toast('Rapport téléchargé : '+name);$('rFile').textContent='Dernier rapport : '+name+' (dossier Téléchargements)';}
+  catch(e){console.error(e);toast('Création du PDF impossible (connexion internet requise la première fois).');}
+  finally{pdfBusy=false;setLab(lab);}}
+$('rGo').addEventListener('click',()=>makePdf($('rGo')));
+$('rView').addEventListener('click',()=>{const r=buildReport();repDoc=r;const ov=$('repOverlay'),fr=$('repFrame');ov.hidden=false;document.body.style.overflow='hidden';
+  $('repTitle').textContent=repFileName();fr.srcdoc=r.html;});
 $('repClose').addEventListener('click',()=>{$('repOverlay').hidden=true;document.body.style.overflow='';});
-$('repPrint').addEventListener('click',()=>{const w=$('repFrame').contentWindow;if(!w)return;const go=()=>{try{w.focus();w.print();}catch(e){toast('Impression impossible ici');}};
-  try{(w.document.fonts&&w.document.fonts.ready?w.document.fonts.ready:Promise.resolve()).then(()=>setTimeout(go,150));}catch(e){go();}});
+$('repPrint').addEventListener('click',()=>makePdf($('repPrint')));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('repOverlay').hidden)$('repClose').click();});
 window.FRH_buildReport=buildReport;
 
