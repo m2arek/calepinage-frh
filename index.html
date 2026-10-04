@@ -138,6 +138,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,label.btn:focus-wi
 .small a{color:var(--accent)}
 .flabelc{font-weight:600;font-size:12.5px}
 #fSeg .tb{padding:6px 12px}
+#tbPlace{margin-left:auto}
+.btn.pulse{animation:frhPulse 1.6s ease-in-out infinite}
+@keyframes frhPulse{0%,100%{box-shadow:0 0 0 0 rgba(217,119,6,.55)}50%{box-shadow:0 0 0 6px rgba(217,119,6,0)}}
 .ctog{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .ctog::before{content:'▾';font-size:12px;color:var(--muted);transition:transform .15s}
 .ctog:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
@@ -390,6 +393,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14p
           <button type="button" class="tb" data-kind="chem">Cheminée</button>
           <button type="button" class="tb" data-kind="autre">Autre</button>
         </div>
+        <button type="button" class="btn acc" id="tbPlace" hidden>Poser les panneaux</button>
         <div class="group">
           <button type="button" class="tb" id="undoBtn" title="Ctrl + Z">Annuler</button>
           <button type="button" class="tb" id="fitBtn">Ajuster</button>
@@ -497,8 +501,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14p
         <div id="fBox" hidden class="field">
           <span class="flabelc">Puissance voulue</span>
           <div class="btnrow" style="align-items:center"><div class="group" id="fSeg"><button type="button" class="tb" data-v="3">3 kWc</button><button type="button" class="tb" data-v="6">6 kWc</button><button type="button" class="tb" data-v="9">9 kWc</button></div>
-            <button type="button" class="btn" id="fPlace">Reposer les panneaux</button><input type="hidden" id="fTarget"></div>
-          <p class="small">Synchronisée avec la simulation : changer la puissance ici ou dans « L'installation » repose automatiquement les panneaux.</p>
+            <button type="button" class="btn acc" id="fPlace">Poser les panneaux</button><input type="hidden" id="fTarget"></div>
+          <p class="small">Tracez d'abord tous les pans, puis cliquez « Poser les panneaux » : ils sont placés en priorité sur les pans qui produisent le plus. Ensuite, changer la puissance ici ou dans « L'installation » les repose automatiquement.</p>
           <p class="readout" id="fInfo"></p>
         </div>
       </section>
@@ -1041,7 +1045,7 @@ function undo(){const s=hist.pop();if(!s){toast('Rien à annuler');return;}const
 let saveT=null;
 function save(){clearTimeout(saveT);saveT=setTimeout(()=>{const base={v:1,isExample:S.isExample,pans:S.pans,obstacles:S.obstacles,calib:S.calib,mpp:S.mpp,mod:S.mod,modV2:true,modV3:true,seq:S.seq,colorIdx:S.colorIdx,roofMode:S.roofMode,poseAuto:true,forcedV2:true,forced:S.forced,capture:S.capture||null};
   try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:S.isExample?null:S.imgURL},base)));}catch(e){try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:null,imgLost:true},base)));}catch(_){}}},400);}
-function changed(){recalc();if(typeof autoPlace==='function'){try{autoPlace();emitCalep();}catch(e){}}if(typeof renderSums==='function')try{renderSums();}catch(e){}if(typeof renderQuick==='function')renderQuick();if(typeof renderPvStatus==='function'&&$('pvStatus'))renderPvStatus();if(typeof renderForced==='function'&&$('fOn'))try{renderForced();}catch(e){}renderList();renderSummary();renderReadout();draw();T3.dirty=true;if(S.view3d)show3d();save();}
+function changed(){recalc();if(typeof renderForced==='function'&&$('tbPlace'))try{renderForced();}catch(e){}if(typeof autoPlace==='function'){try{autoPlace();emitCalep();}catch(e){}}if(typeof renderSums==='function')try{renderSums();}catch(e){}if(typeof renderQuick==='function')renderQuick();if(typeof renderPvStatus==='function'&&$('pvStatus'))renderPvStatus();if(typeof renderForced==='function'&&$('fOn'))try{renderForced();}catch(e){}renderList();renderSummary();renderReadout();draw();T3.dirty=true;if(S.view3d)show3d();save();}
 function selItem(){if(!S.sel)return null;return S.sel.type==='pan'?S.pans.find(p=>p.id===S.sel.id):S.obstacles.find(o=>o.id===S.sel.id);}
 function select(type,id){S.sel=type?{type,id}:null;S.sub=null;S.eaveHover=null;renderList();renderEditor();draw();setHint();}
 function deleteSel(){const it=selItem();if(!it)return;snapshot();if(S.sel.type==='pan')S.pans=S.pans.filter(p=>p!==it);else S.obstacles=S.obstacles.filter(o=>o!==it);S.sel=null;changed();renderEditor();}
@@ -1049,7 +1053,7 @@ function deleteSel(){const it=selItem();if(!it)return;snapshot();if(S.sel.type==
 /* ---------- vue 2D ---------- */
 const toImg=sp=>({x:(sp.x-S.view.ox)/S.view.s,y:(sp.y-S.view.oy)/S.view.s});
 const toScr=ip=>({x:ip.x*S.view.s+S.view.ox,y:ip.y*S.view.s+S.view.oy});
-function resize(){const dpr=window.devicePixelRatio||1,w=stage.clientWidth,h=stage.clientHeight;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);if(!resize.done&&S.img){fit();resize.done=true;}draw();}
+function resize(){const dpr=window.devicePixelRatio||1,w=stage.clientWidth,h=stage.clientHeight;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);if(!resize.done&&S.img&&w>0){fit();resize.done=true;}draw();}
 function fit(){if(!S.img)return;const w=stage.clientWidth,h=stage.clientHeight;let bx0=0,by0=0,bx1=S.imgW,by1=S.imgH;
   const s=Math.min(w/(bx1-bx0),h/(by1-by0))*0.96;S.view={s,ox:(w-(bx1-bx0)*s)/2-bx0*s,oy:(h-(by1-by0)*s)/2-by0*s};draw();}
 function zoomAt(sp,f){const ip=toImg(sp);S.view.s=clamp(S.view.s*f,0.03,60);S.view.ox=sp.x-ip.x*S.view.s;S.view.oy=sp.y-ip.y*S.view.s;}
@@ -1380,7 +1384,7 @@ $('mSrc').addEventListener('change',()=>{S.mod.src=$('mSrc').value;changed();ren
 
 /* ---------- puissance imposée ---------- */
 function panSpec(p){if(p.pts.length<3)return 0;const {tilt,gam}=panAngles(p);return specMonthly(tilt,gam).mon.reduce((a,b)=>a+b,0);}
-async function placeForced(auto){if(!S.mpp){if(!auto)toast('Définissez d\'abord l\'échelle.');return;}
+async function placeForced(auto){if(!S.pans.some(p=>p.pts.length>=3)){if(!auto)toast('Tracez d\'abord les pans de la toiture.');return;}if(!S.mpp){if(!auto)toast('Définissez d\'abord l\'échelle.');return;}
   if(usePvgis()){const ps=S.pans.filter(p=>p.pts.length>=3).map(p=>{const a=panAngles(p);return pvFetch(a.tilt,a.gam);});if(ps.length){if(!auto)toast('Interrogation de PVGIS…');await Promise.all(ps);}}
   const target=parseFloat(String($('fTarget').value).replace(',','.'));if(!(target>0)){toast('Saisissez une puissance en kWc.');return;}
   if(!auto)snapshot();S.forced.target=target;S.pans.forEach(p=>p.on=[]);
@@ -1399,25 +1403,25 @@ async function placeForced(auto){if(!S.mpp){if(!auto)toast('Définissez d\'abord
     used.push([p.name,k]);});
   S.forced.placed=true;S.forced.last={N,placed:N-left,used};S.forced.sig=geoSig();changed();renderForced();setHint();
   if(left>0)toast(`Toiture insuffisante : ${N-left} modules posés sur ${N} demandés`);else if(!auto)toast(`${N} modules posés`);}
-function renderForced(){const f=S.forced;document.querySelectorAll('#fSeg .tb').forEach(b=>b.classList.toggle('on',+b.dataset.v===f.target));$('fOn').checked=!!f.on;$('fBox').hidden=!f.on;$('fTarget').value=f.target??6;if(!f.on){$('fInfo').innerHTML='';return;}
+function renderForced(){const f=S.forced;document.querySelectorAll('#fSeg .tb').forEach(b=>b.classList.toggle('on',+b.dataset.v===f.target));$('fOn').checked=!!f.on;$('fBox').hidden=!f.on;$('fTarget').value=f.target??6;const stale=f.placed&&f.sig!==geoSig();['fPlace','tbPlace'].forEach(id=>{const b=$(id);b.textContent=f.placed?'Reposer les panneaux':'Poser les panneaux';b.classList.toggle('pulse',!f.placed&&S.pans.some(p=>p.pts.length>=3)||stale);});$('tbPlace').hidden=!f.on;if(!f.on){$('fInfo').innerHTML='';return;}
   const wp=S.mod.wp,t=parseFloat(String($('fTarget').value).replace(',','.'))||0,N=Math.floor(t*1000/wp+1e-9);
   let cap=0;S.pans.forEach(p=>{const L=S.layouts[p.id];if(L)cap+=L.panels.length;});
   const ranked=S.pans.filter(p=>p.pts.length>=3).map(p=>({p,spec:panSpec(p)})).sort((a,b)=>b.spec-a.spec);
   let h=`${N} modules de ${nf(wp)} Wc = <b>${nf(N*wp/1000,2)} kWc</b>`+(N*wp/1000<t-1e-9?` (arrondi en dessous de ${nf(t,2)} kWc)`:'')+`<br>Capacité maximale de la toiture : ${cap} modules = ${nf(cap*wp/1000,2)} kWc`;
   if(ranked.length&&S.mpp)h+='<br>Ordre de remplissage : '+ranked.map(x=>`${esc(x.p.name)} (${nf(x.spec)} kWh/kWc, ${poseLabel(x.p)})`).join(' › ')+(f.placed?'':'<br>La pose portrait ou paysage de chaque pan sera choisie automatiquement pour loger le plus de modules.');
-  if(f.placed){const n=totals().n;h+=`<br>Posés actuellement : <b>${n} modules = ${nf(n*wp/1000,2)} kWc</b>`;if(f.last&&n!==f.last.placed)h+=' <span class="warn">(la toiture ou la pose a changé : cliquez à nouveau « Poser les panneaux » pour recalculer)</span>';}
+  if(f.placed){const n=totals().n;h+=`<br>Posés actuellement : <b>${n} modules = ${nf(n*wp/1000,2)} kWc</b>`;if(f.last&&n!==f.last.placed)h+=' <span class="warn">(la toiture ou la pose a changé : cliquez « Reposer les panneaux » pour recalculer)</span>';}
   else h+='<br><span class="warn">Aucun panneau posé pour l\'instant.</span>';
   $('fInfo').innerHTML=h;}
 $('fOn').addEventListener('change',()=>{snapshot();S.forced.on=$('fOn').checked;S.forced.placed=false;S.pans.forEach(p=>p.on=[]);changed();renderForced();setHint();});
-$('fPlace').addEventListener('click',()=>placeForced(false));
+$('fPlace').addEventListener('click',()=>placeForced(false));$('tbPlace').addEventListener('click',()=>placeForced(false));
 /* ---------- liaison avec la simulation ---------- */
-function setTarget(v){if(![3,6,9].includes(v))return;S.forced.target=v;S.forced.on=true;$('fTarget').value=v;renderForced();save();if(S.mpp&&S.pans.length)placeForced(true);else emitCalep();}
+function setTarget(v){if(![3,6,9].includes(v))return;S.forced.target=v;S.forced.on=true;$('fTarget').value=v;renderForced();save();if(S.forced.placed&&S.mpp&&S.pans.length)placeForced(true);else emitCalep();}
 $('fSeg').addEventListener('click',e=>{const b=e.target.closest('.tb');if(b)setTarget(+b.dataset.v);});
 window.addEventListener('frh:power',e=>{const v=e.detail&&e.detail.kwc;if(v&&v!==S.forced.target)setTarget(v);});
 /* empreinte de la toiture : si elle change en mode puissance imposée, les panneaux sont reposés automatiquement */
 function geoSig(){return JSON.stringify([S.mpp,S.forced.target,S.mod.w,S.mod.h,S.mod.wp,S.mod.margin,S.mod.gap,S.pans.map(p=>[p.pts,p.slope,p.eave,p.tilt,isFlat(p)]),S.obstacles.map(o=>o.pts)]);}
 let autoT=null,emitT=null;
-function autoPlace(){if(!S.forced.on||!S.mpp||!S.pans.length)return;if(S.forced.sig===geoSig())return;clearTimeout(autoT);autoT=setTimeout(()=>{if(S.forced.sig!==geoSig())placeForced(true);},450);}
+function autoPlace(){return;if(!S.forced.on||!S.mpp||!S.pans.length)return;if(S.forced.sig===geoSig())return;clearTimeout(autoT);autoT=setTimeout(()=>{if(S.forced.sig!==geoSig())placeForced(true);},450);}
 /* territoire déduit des coordonnées GPS du chantier */
 function terrFromGps(lat,lon){if(lat==null||lon==null)return null;
   if(lat>14.3&&lat<15&&lon>-61.3&&lon<-60.7)return'Martinique';if(lat>15.8&&lat<16.6&&lon>-61.9&&lon<-60.9)return'Guadeloupe';
@@ -1701,6 +1705,8 @@ window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').addEventLis
 
 /* ---------- démarrage ---------- */
 new ResizeObserver(resize).observe(stage);
+window.FRH_calepDbg=()=>({view:S.view,w:stage.clientWidth,cw:cv.width,v3:S.view3d,vm:S.viewMap});
+window.FRH_calepShow=()=>requestAnimationFrame(()=>{resize();const v=S.view;if(!(v.s>0)||!isFinite(v.s)||!isFinite(v.ox)||!isFinite(v.oy))fit();draw();});
 new ResizeObserver(()=>document.documentElement.style.setProperty('--hdr',document.querySelector('.top').offsetHeight+'px')).observe(document.querySelector('.top'));
 function restore(){let saved=null;try{saved=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
   if(!saved||(!saved.img&&!saved.isExample)){loadExample();return;}
@@ -2130,7 +2136,7 @@ if(location.protocol!=='file:'){fetch('tarifs.json',{cache:'no-store'}).then(r=>
   const g=id=>document.getElementById(id);
   function off(list){list.forEach(id=>{const b=g(id);b.classList.remove('on');b.setAttribute('aria-selected','false');});}
   document.getElementById('top').addEventListener('click',e=>{const b=e.target.closest('button[role="tab"]');if(!b)return;
-    if(CAL.includes(b.id)){if(g('appCalep').hidden){if(window.FRH_simHide)window.FRH_simHide();g('appSim').hidden=true;g('appCalep').hidden=false;}off(SIM);}
+    if(CAL.includes(b.id)){if(g('appCalep').hidden){if(window.FRH_simHide)window.FRH_simHide();g('appSim').hidden=true;g('appCalep').hidden=false;if(window.FRH_calepShow)window.FRH_calepShow();}off(SIM);}
     else if(SIM.includes(b.id)){g('appCalep').hidden=true;g('appSim').hidden=false;off(CAL);}},true);
   off(SIM);
 })();
