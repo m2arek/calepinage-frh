@@ -138,6 +138,16 @@ button:focus-visible,input:focus-visible,select:focus-visible,label.btn:focus-wi
 .small a{color:var(--accent)}
 .flabelc{font-weight:600;font-size:12.5px}
 #fSeg .tb{padding:6px 12px}
+.repgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0}
+.repfig{margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.repimg{aspect-ratio:4/3;border:1px dashed var(--line);border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:12px;color:var(--muted);text-align:center;padding:4px}
+.repimg img{width:100%;height:100%;object-fit:cover;border-radius:6px}
+.repimg.has{border-style:solid;padding:0}
+.repfig figcaption{display:flex;flex-direction:column;gap:4px}
+.repfig .btn{width:100%;justify-content:center}
+.chk{display:flex;gap:8px;align-items:center}
+#appSim .cli3{grid-template-columns:.8fr 1fr 1fr}
+#appSim .opt{font-weight:400;color:var(--muted);font-size:11px}
 .panrow .py{display:block;font:500 11px var(--body);color:var(--muted,#6b7280);margin-top:1px}
 #tbPlace{margin-left:auto}
 .btn.pulse{animation:frhPulse 1.6s ease-in-out infinite}
@@ -199,7 +209,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14p
 #appSim .small{font-size:12.5px;color:var(--muted);margin:0}
 #appSim .field{display:flex;flex-direction:column;gap:4px;min-width:0}
 #appSim .field label,#appSim .flabel{font-weight:600;font-size:12.5px}
-#appSim input[type=number],#appSim input[type=text],#appSim input[type=date],#appSim select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:7px 9px;width:100%;min-width:0}
+#appSim input[type=number],#appSim input[type=text],#appSim input[type=date],#appSim input[type=tel],#appSim input[type=email],#appSim select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:7px 9px;width:100%;min-width:0}
 #appSim .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 #appSim .btn{font:600 13px var(--body);border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:7px 11px;border-radius:7px;cursor:pointer;text-align:center}
 #appSim .btn:hover{border-color:var(--accent)}
@@ -421,6 +431,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14p
         <div class="msg3d" id="msg3d" hidden></div>
         <div class="btn3d" id="btn3d" hidden>
           <button type="button" class="btn" id="recenter3d">Recentrer</button>
+          <button type="button" class="btn acc" id="snap3dBtn">Capturer pour le rapport</button>
           <button type="button" class="btn" id="top3d">Vue de dessus</button>
           <select id="roofMode" aria-label="Rendu du toit" style="width:auto">
             <option value="photo">Toit : photo de la capture</option>
@@ -554,6 +565,18 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14p
         <p class="small">Irradiation horizontale annuelle moyenne de la ville (valeur indicative). Pour plus de précision, remplacez-la par la valeur <a href="https://re.jrc.ec.europa.eu/pvg_tools/fr/" target="_blank" rel="noopener">PVGIS</a> de l'adresse exacte. Le rendement global couvre température, onduleur, câbles et salissures (80 % est une valeur courante).</p>
       </section>
 
+      <section class="card" id="card6">
+        <h2>Images pour le rapport <span class="step">Étape 5</span></h2>
+        <p class="small">Cadrez la vue (zoom, déplacement, rotation en 3D) puis capturez. Les poignées, cotes et aides ne figurent pas sur l'image.</p>
+        <div class="repgrid">
+          <figure class="repfig"><div class="repimg" id="rep2dImg"><span>Pas encore de vue 2D</span></div>
+            <figcaption><button type="button" class="btn acc" id="rep2dBtn">Capturer la vue 2D</button><span class="small" id="rep2dInfo"></span></figcaption></figure>
+          <figure class="repfig"><div class="repimg" id="rep3dImg"><span>Pas encore de vue 3D</span></div>
+            <figcaption><button type="button" class="btn acc" id="rep3dBtn">Capturer la vue 3D</button><span class="small" id="rep3dInfo"></span></figcaption></figure>
+        </div>
+        <label class="chk small"><input type="checkbox" id="repLabels" checked> Afficher le nom des pans sur la vue 2D</label>
+      </section>
+
       <section class="card">
         <h2>Récapitulatif</h2>
         <div class="totals">
@@ -587,8 +610,28 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14p
   <div id="viewInfo">
     <div class="infogrid">
       <div class="infocol">
+      <section class="card coll" id="cPerson">
+        <h2><button type="button" class="ctog" aria-expanded="true">Le client</button> <span class="step">Étape 1</span></h2>
+        <p class="small csum" id="sPerson"></p>
+        <div class="three cli3">
+          <div class="field"><label for="cCiv">Civilité</label><select id="cCiv"><option>M.</option><option>Mme</option><option>M. et Mme</option></select></div>
+          <div class="field"><label for="cNom">Nom</label><input type="text" id="cNom" autocomplete="off"></div>
+          <div class="field"><label for="cPrenom">Prénom</label><input type="text" id="cPrenom" autocomplete="off"></div>
+        </div>
+        <div class="field"><label for="cAdr">Adresse du chantier</label><input type="text" id="cAdr" autocomplete="off"><span class="small" id="cAdrInfo"></span></div>
+        <div class="two">
+          <div class="field"><label for="cTel">Téléphone <span class="opt">facultatif</span></label><input type="tel" id="cTel" autocomplete="off"></div>
+          <div class="field"><label for="cMail">E-mail <span class="opt">facultatif</span></label><input type="email" id="cMail" autocomplete="off"></div>
+        </div>
+        <div class="two">
+          <div class="field"><label for="cCom">Commercial</label><input type="text" id="cCom" autocomplete="off"></div>
+          <div class="field"><label for="cDate">Date de l'étude</label><input type="date" id="cDate"></div>
+        </div>
+        <div class="btnrow"><button type="button" class="btn" id="cNew">Nouveau client</button></div>
+      </section>
+
       <section class="card coll" id="cClient">
-        <h2><button type="button" class="ctog" aria-expanded="true">Le foyer</button> <span class="step">Étape 1</span></h2>
+        <h2><button type="button" class="ctog" aria-expanded="true">Le foyer</button> <span class="step">Étape 2</span></h2>
         <p class="small csum" id="sClient"></p>
         <div class="field"><label for="iTerr">Territoire</label><select id="iTerr"></select></div>
         <div class="two">
@@ -615,7 +658,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14p
       </div>
       <div class="infocol">
       <section class="card coll" id="cInst">
-        <h2><button type="button" class="ctog" aria-expanded="true">L'installation</button> <span class="step">Étape 2</span></h2>
+        <h2><button type="button" class="ctog" aria-expanded="true">L'installation</button> <span class="step">Étape 3</span></h2>
         <p class="small csum" id="sInst"></p>
         <div class="calband" id="calBand" hidden>
           <div id="calTxt"></div>
@@ -869,7 +912,7 @@ const KEY='frh-calepinage-v1';
 const S={img:null,imgURL:null,imgW:0,imgH:0,isExample:false,mpp:null,calib:null,pans:[],obstacles:[],
   mod:{src:'auto',loss:14,preset:'p2000',w:1000,h:2000,wp:500,margin:30,gap:2,lat:48.9,shade:'1014',site:4,ghi:1220,pr:80},
   sel:null,mode:'select',sub:null,draft:[],calibDraft:[],hover:null,snap:null,shift:false,
-  forced:{on:true,target:6,placed:false},view:{s:1,ox:0,oy:0},layouts:{},seq:1,colorIdx:0,view3d:false};
+  forced:{on:true,target:6,placed:false},report:{},view:{s:1,ox:0,oy:0},layouts:{},seq:1,colorIdx:0,view3d:false};
 const hist=[];
 
 /* ---------- utilitaires ---------- */
@@ -1053,9 +1096,9 @@ function snapshot(){hist.push(JSON.stringify({pans:S.pans,obstacles:S.obstacles,
 function undo(){const s=hist.pop();if(!s){toast('Rien à annuler');return;}const o=JSON.parse(s);S.pans=o.pans;S.obstacles=o.obstacles;S.calib=o.calib;S.mpp=o.mpp;if(o.forced)S.forced=o.forced;renderForced();
   if(S.sel&&!selItem())S.sel=null;S.draft=[];changed();renderEditor();renderCalib();}
 let saveT=null;
-function save(){clearTimeout(saveT);saveT=setTimeout(()=>{const base={v:1,isExample:S.isExample,pans:S.pans,obstacles:S.obstacles,calib:S.calib,mpp:S.mpp,mod:S.mod,modV2:true,modV3:true,seq:S.seq,colorIdx:S.colorIdx,roofMode:S.roofMode,poseAuto:true,forcedV2:true,forced:S.forced,capture:S.capture||null};
-  try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:S.isExample?null:S.imgURL},base)));}catch(e){try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:null,imgLost:true},base)));}catch(_){}}},400);}
-function changed(){recalc();if(typeof renderForced==='function'&&$('tbPlace'))try{renderForced();}catch(e){}if(typeof autoPlace==='function'){try{autoPlace();emitCalep();}catch(e){}}if(typeof renderSums==='function')try{renderSums();}catch(e){}if(typeof renderQuick==='function')renderQuick();if(typeof renderPvStatus==='function'&&$('pvStatus'))renderPvStatus();if(typeof renderForced==='function'&&$('fOn'))try{renderForced();}catch(e){}renderList();renderSummary();renderReadout();draw();T3.dirty=true;if(S.view3d)show3d();save();}
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{const base={v:1,isExample:S.isExample,pans:S.pans,obstacles:S.obstacles,calib:S.calib,mpp:S.mpp,mod:S.mod,modV2:true,modV3:true,seq:S.seq,colorIdx:S.colorIdx,roofMode:S.roofMode,poseAuto:true,forcedV2:true,forced:S.forced,report:S.report||{},capture:S.capture||null};
+  try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:S.isExample?null:S.imgURL},base)));}catch(e){try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:S.isExample?null:S.imgURL},base,{report:{}})));if(!save.warned){save.warned=true;toast('Mémoire du navigateur pleine : les images du rapport ne seront pas conservées après fermeture');}}catch(e2){try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:null,imgLost:true},base,{report:{}})));}catch(_){}}}},400);}
+function changed(){recalc();if(typeof renderReport==='function')try{renderReport();}catch(e){}if(typeof renderForced==='function'&&$('tbPlace'))try{renderForced();}catch(e){}if(typeof autoPlace==='function'){try{autoPlace();emitCalep();}catch(e){}}if(typeof renderSums==='function')try{renderSums();}catch(e){}if(typeof renderQuick==='function')renderQuick();if(typeof renderPvStatus==='function'&&$('pvStatus'))renderPvStatus();if(typeof renderForced==='function'&&$('fOn'))try{renderForced();}catch(e){}renderList();renderSummary();renderReadout();draw();T3.dirty=true;if(S.view3d)show3d();save();}
 function selItem(){if(!S.sel)return null;return S.sel.type==='pan'?S.pans.find(p=>p.id===S.sel.id):S.obstacles.find(o=>o.id===S.sel.id);}
 function select(type,id){S.sel=type?{type,id}:null;S.sub=null;S.eaveHover=null;renderList();renderEditor();draw();setHint();}
 function deleteSel(){const it=selItem();if(!it)return;snapshot();if(S.sel.type==='pan')S.pans=S.pans.filter(p=>p!==it);else S.obstacles=S.obstacles.filter(o=>o!==it);S.sel=null;changed();renderEditor();}
@@ -1441,6 +1484,47 @@ function renderForced(){const f=S.forced;document.querySelectorAll('#fSeg .tb').
   $('fInfo').innerHTML=h;}
 $('fOn').addEventListener('change',()=>{snapshot();S.forced.on=$('fOn').checked;S.forced.placed=false;S.pans.forEach(p=>{p.on=[];delete p.lay;});changed();renderForced();setHint();});
 $('fPlace').addEventListener('click',()=>placeForced(false));$('tbPlace').addEventListener('click',()=>placeForced(false));
+/* ---------- images pour le rapport ---------- */
+function repSig(){return JSON.stringify([geoSig(),S.pans.map(p=>[p.on||[],p.off||[],p.lay||null]),S.forced.on]);}
+function snap2d(auto,labels){if(!S.img)return null;const MW=1600;let W,H,V;
+  if(!auto&&stage.clientWidth>0&&S.view.s>0){const k=MW/stage.clientWidth;W=MW;H=Math.round(stage.clientHeight*k);V={s:S.view.s*k,ox:S.view.ox*k,oy:S.view.oy*k};}
+  else{let P=[];S.pans.forEach(p=>P.push(...p.pts));if(P.length<3)P=[{x:0,y:0},{x:S.imgW,y:S.imgH}];
+    let x0=Math.min(...P.map(p=>p.x)),x1=Math.max(...P.map(p=>p.x)),y0=Math.min(...P.map(p=>p.y)),y1=Math.max(...P.map(p=>p.y));
+    const pad=Math.max(x1-x0,y1-y0)*0.18+20;x0-=pad;x1+=pad;y0-=pad;y1+=pad;W=MW;H=1200;const s=Math.min(W/(x1-x0),H/(y1-y0));V={s,ox:W/2-s*(x0+x1)/2,oy:H/2-s*(y0+y1)/2};}
+  const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');g.fillStyle='#d9dedc';g.fillRect(0,0,W,H);
+  const f=W/1000,px=1/V.s,path=pts=>{g.beginPath();pts.forEach((q,j)=>j?g.lineTo(q.x,q.y):g.moveTo(q.x,q.y));g.closePath();};
+  g.save();g.translate(V.ox,V.oy);g.scale(V.s,V.s);g.imageSmoothingQuality='high';g.drawImage(S.img,0,0,S.imgW,S.imgH);
+  S.pans.forEach(p=>{if(p.pts.length<3)return;const col=COLORS[p.color%COLORS.length];path(p.pts);g.globalAlpha=.14;g.fillStyle=col;g.fill();g.globalAlpha=1;g.lineWidth=2*f*px;g.strokeStyle=col;g.stroke();});
+  if(S.mpp){const k=1/S.mpp;S.pans.forEach(p=>{const L=S.layouts[p.id];if(!L)return;L.panels.forEach(pn=>{if(pn.off)return;
+    g.beginPath();pn.plan.forEach((q,j)=>j?g.lineTo(q.x*k,q.y*k):g.moveTo(q.x*k,q.y*k));g.closePath();g.fillStyle='rgba(18,31,58,.92)';g.fill();g.lineWidth=1.2*f*px;g.strokeStyle='rgba(196,210,232,.95)';g.stroke();});});}
+  const OC={chem:['rgba(224,57,43,.40)','#ff5a47'],velux:['rgba(56,189,248,.40)','#38bdf8'],autre:['rgba(250,204,21,.40)','#facc15']};
+  S.obstacles.forEach(o=>{const cc=OC[o.kind]||OC.autre;path(o.pts);g.fillStyle=cc[0];g.fill();g.lineWidth=1.5*f*px;g.strokeStyle=cc[1];g.stroke();});
+  g.restore();
+  const sc=q=>({x:q.x*V.s+V.ox,y:q.y*V.s+V.oy});
+  if(labels!==false&&S.mpp){g.font=`600 ${Math.round(13*f)}px Figtree, system-ui, sans-serif`;g.textAlign='center';g.textBaseline='middle';
+    S.pans.forEach(p=>{if(p.pts.length<3)return;const n=activeCount(p);if(!n)return;const cc=sc(centroid(p.pts));const tx=`${p.name} · ${n} modules`;const tw=g.measureText(tx).width,h=22*f;
+      g.fillStyle='rgba(10,14,13,.78)';g.beginPath();g.roundRect?g.roundRect(cc.x-tw/2-8*f,cc.y-h/2,tw+16*f,h,6*f):g.rect(cc.x-tw/2-8*f,cc.y-h/2,tw+16*f,h);g.fill();g.fillStyle='#fff';g.fillText(tx,cc.x,cc.y+1);});}
+  /* flèche du nord (les captures sont orientées nord en haut) */
+  const nx=W-42*f,ny=46*f;g.fillStyle='rgba(10,14,13,.78)';g.beginPath();g.arc(nx,ny,26*f,0,7);g.fill();g.fillStyle='#fff';g.beginPath();g.moveTo(nx,ny-17*f);g.lineTo(nx+8*f,ny+2*f);g.lineTo(nx-8*f,ny+2*f);g.closePath();g.fill();
+  g.font=`700 ${Math.round(12*f)}px Figtree, system-ui, sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText('N',nx,ny+13*f);
+  /* échelle */
+  if(S.mpp){const mPx=V.s/S.mpp;const opts=[1,2,5,10,20];const L=opts.find(o=>o*mPx>=90*f)||20;const bx=24*f,by=H-26*f;g.fillStyle='rgba(255,255,255,.85)';g.fillRect(bx-8*f,by-22*f,L*mPx+16*f,32*f);
+    g.fillStyle='#111';g.fillRect(bx,by,L*mPx,4*f);g.font=`600 ${Math.round(11*f)}px Figtree, system-ui, sans-serif`;g.textAlign='left';g.textBaseline='alphabetic';g.fillText(L+' m',bx,by-6*f);}
+  try{return c.toDataURL('image/jpeg',0.86);}catch(e){return null;}}
+function snap3d(){if(!T3.ready||!S.view3d)return null;try{render3d();const src=T3.r.domElement;const MW=1600,k=Math.min(1,MW/src.width);const c=document.createElement('canvas');c.width=Math.round(src.width*k);c.height=Math.round(src.height*k);
+  const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(src,0,0,c.width,c.height);return c.toDataURL('image/jpeg',0.86);}catch(e){return null;}}
+function capReport(kind){if(!S.img||!S.pans.some(p=>p.pts.length>=3)){toast('Tracez d\'abord la toiture.');return;}
+  if(kind==='3d'&&!S.view3d){show3d();setTimeout(()=>capReport('3d'),500);return;}
+  if(kind==='2d'&&(S.view3d||S.viewMap)){show2d();setTimeout(()=>capReport('2d'),200);return;}
+  const url=kind==='2d'?snap2d(false,$('repLabels').checked):snap3d();if(!url){toast('Capture impossible dans ce navigateur.');return;}
+  S.report=S.report||{};S.report[kind]={url,sig:repSig(),at:Date.now()};save();renderReport();toast(kind==='2d'?'Vue 2D enregistrée pour le rapport':'Vue 3D enregistrée pour le rapport');}
+function renderReport(){if(!$('card6'))return;const R0=S.report||{},sig=repSig();
+  ['2d','3d'].forEach(k=>{const r=R0[k],box=$('rep'+k+'Img'),info=$('rep'+k+'Info');
+    if(r&&r.url){if(!box.classList.contains('has')||box.dataset.at!==String(r.at)){box.innerHTML=`<img alt="Vue ${k.toUpperCase()} pour le rapport" src="${r.url}">`;box.classList.add('has');box.dataset.at=String(r.at);}
+      const d=new Date(r.at);info.innerHTML=(r.sig!==sig?'<span class="warn">La toiture a changé depuis : recapturez.</span>':'Capturée le '+d.toLocaleDateString('fr-FR')+' à '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}));$('rep'+k+'Btn').textContent='Recapturer';}
+    else{box.classList.remove('has');box.innerHTML=k==='2d'?'<span>Pas de capture : le rapport prendra une vue de dessus cadrée automatiquement</span>':'<span>Pas encore de vue 3D (facultatif)</span>';info.textContent='';$('rep'+k+'Btn').textContent=k==='2d'?'Capturer la vue 2D':'Capturer la vue 3D';}});}
+$('rep2dBtn').addEventListener('click',()=>capReport('2d'));$('rep3dBtn').addEventListener('click',()=>capReport('3d'));$('snap3dBtn').addEventListener('click',()=>capReport('3d'));
+window.FRH_report=()=>{const R0=S.report||{},sig=repSig();return{img2d:(R0['2d']&&R0['2d'].url)||snap2d(true,true),img3d:(R0['3d']&&R0['3d'].url)||null,auto2d:!(R0['2d']&&R0['2d'].url),stale2d:!!(R0['2d']&&R0['2d'].sig!==sig),stale3d:!!(R0['3d']&&R0['3d'].sig!==sig)};};
 /* ---------- liaison avec la simulation ---------- */
 function setTarget(v){if(![3,6,9].includes(v))return;S.forced.target=v;S.forced.on=true;$('fTarget').value=v;renderForced();save();if(S.forced.placed&&S.mpp&&S.pans.length)placeForced(true);else emitCalep();}
 $('fSeg').addEventListener('click',e=>{const b=e.target.closest('.tb');if(b)setTarget(+b.dataset.v);});
@@ -1457,7 +1541,7 @@ function terrFromGps(lat,lon){if(lat==null||lon==null)return null;
 function emitCalep(){clearTimeout(emitT);emitT=setTimeout(()=>{const t=totals();let year=0;if(S.mpp)S.pans.forEach(p=>{year+=panProd(p).year;});
   const lat=S.mod.gpsLat??(S.capture?S.capture.lat:null),lon=S.mod.gpsLon??(S.capture?S.capture.lon:null);
   const d={kwc:t.kwc,n:t.n,yield:t.kwc>0?year/t.kwc:null,year,terr:S.isExample?null:terrFromGps(lat,lon),lat,lon,src:usePvgis()?'PVGIS':'calcul interne',
-    target:S.forced.target,forcedOn:!!S.forced.on,hasRoof:!!(S.mpp&&S.pans.length&&t.n>0),isExample:!!S.isExample};
+    addr:S.isExample?null:((S.capture&&S.capture.addr)||S.mod.addr||null),target:S.forced.target,forcedOn:!!S.forced.on,hasRoof:!!(S.mpp&&S.pans.length&&t.n>0),isExample:!!S.isExample};
   window.FRH_CALEP=d;window.dispatchEvent(new CustomEvent('frh:calep',{detail:d}));},120);}
 function totals(){let n=0;S.pans.forEach(p=>n+=activeCount(p));return{n,kwc:n*S.mod.wp/1000,area:n*S.mod.w*S.mod.h/1e6};}
 function renderSummary(){if(!S.mpp){['tN','tKwc','tArea','tProd'].forEach(i=>$(i).textContent='–');$('prodWrap').hidden=true;return;}
@@ -1508,7 +1592,7 @@ function setImage(url,isEx,cb){const im=new Image();im.onload=()=>{S.img=im;S.im
 function loadFile(file){if(!file||!/^image\//.test(file.type)){toast('Choisissez une image (PNG ou JPG).');return;}
   const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,2400/Math.max(im.width,im.height));const c=document.createElement('canvas');
     c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
-    setImage(c.toDataURL('image/jpeg',0.9),false,()=>{hist.length=0;S.capture=null;S.pans=[];S.obstacles=[];S.calib=null;S.mpp=null;S.sel=null;S.seq=1;S.colorIdx=0;
+    setImage(c.toDataURL('image/jpeg',0.9),false,()=>{hist.length=0;S.report={};S.capture=null;S.pans=[];S.obstacles=[];S.calib=null;S.mpp=null;S.sel=null;S.seq=1;S.colorIdx=0;
       if(S.view3d)show2d();fit();setMode('calib');renderCalib();renderEditor();changed();autoCollapse();setCollapsed(2,false);toast('Étape suivante : tracez une longueur connue');});};im.src=fr.result;};fr.readAsDataURL(file);}
 $('fileIn').addEventListener('change',e=>{loadFile(e.target.files[0]);e.target.value='';});
 ['dragenter','dragover'].forEach(t=>stage.addEventListener(t,e=>{e.preventDefault();$('dropzone').hidden=false;}));
@@ -1549,7 +1633,7 @@ function makeExample(){const k=EX_K,W=42*k,H=30*k,c=document.createElement('canv
   poly(EX_OBS[0].pts);g.fillStyle='#8c847a';g.fill();g.fillStyle='#3a3530';g.fillRect(10.25*k,9.65*k,0.5*k,0.5*k);poly(EX_OBS[0].pts,0.4,0.5);g.fillStyle='rgba(0,0,0,.3)';g.fill();
   poly(EX_OBS[1].pts);g.fillStyle='#2b3542';g.fill();g.strokeStyle='#9aa3ad';g.lineWidth=2;g.stroke();
   return c.toDataURL('image/jpeg',0.9);}
-function loadExample(){setImage(makeExample(),true,()=>{hist.length=0;S.capture=null;S.seq=1;S.colorIdx=0;
+function loadExample(){setImage(makeExample(),true,()=>{hist.length=0;S.report={};S.capture=null;S.seq=1;S.colorIdx=0;
   S.pans=EX_PANS.map(p=>({id:'p'+(S.seq++),name:p.name,pts:p.pts.map(([x,y])=>({x:x*EX_K,y:y*EX_K})),eave:p.eave,slope:p.slope,eaveH:p.eaveH,pose:'auto',off:[],color:S.colorIdx++}));
   S.obstacles=EX_OBS.map(o=>({id:'o'+(S.seq++),pts:o.pts.map(([x,y])=>({x:x*EX_K,y:y*EX_K})),kind:o.kind}));
   S.calib={a:{x:6*EX_K,y:8*EX_K},b:{x:26*EX_K,y:8*EX_K},len:20};S.mpp=0.05;S.sel=null;
@@ -1687,7 +1771,7 @@ async function mapSearch(){const q=$('mapQ').value.trim();const box=$('mapRes');
 $('mapGo').addEventListener('click',mapSearch);
 /* ---------- autocomplétion d'adresse (Géoplateforme IGN) ---------- */
 const AC={t:null,seq:0,items:[],idx:-1};
-function goTo(lat,lon,label){$('mapRes').hidden=true;AC.items=[];AC.idx=-1;if(label)$('mapQ').value=label;
+function goTo(lat,lon,label){$('mapRes').hidden=true;AC.items=[];AC.idx=-1;if(label){$('mapQ').value=label;S.mod.addr=label;save();}
   MAP.m.setView([lat,lon],19);placeMarker(lat,lon);$('mapHelp').innerHTML='Adresse trouvée. <b>Cliquez exactement sur le bâtiment</b> pour placer le repère, puis capturez.';}
 function renderAC(){const box=$('mapRes');if(!AC.items.length){box.hidden=true;return;}
   box.innerHTML=AC.items.map((x,i)=>`<button type="button" data-i="${i}"${i===AC.idx?' style="background:var(--accent-soft)"':''}>${esc(x.label)}</button>`).join('');box.hidden=false;
@@ -1717,8 +1801,8 @@ async function captureMap(){if(!MAP.m)return;if(S.mod.gpsLat==null){toast('Cliqu
     let url;try{url=c.toDataURL('image/jpeg',0.92);}catch(e){toast('Le navigateur a bloqué la capture.');return;}
     const lat=MAP.m.unproject([(nw.x+se.x)/2,(nw.y+se.y)/2],z).lat;const mpp=156543.03392*Math.cos(lat*Math.PI/180)/Math.pow(2,z);
     const gl=S.mod.gpsLat,gn=S.mod.gpsLon,mk=MAP.m.project([gl,gn],z);
-    setImage(url,false,()=>{hist.length=0;S.pans=[];S.obstacles=[];S.sel=null;S.seq=1;S.colorIdx=0;S.forced.placed=false;
-      S.mpp=mpp;S.calib={auto:true,z,lat};S.capture={src:'IGN',z,lat:gl,lon:gn,mx:mk.x-nw.x,my:mk.y-nw.y};
+    setImage(url,false,()=>{hist.length=0;S.report={};S.pans=[];S.obstacles=[];S.sel=null;S.seq=1;S.colorIdx=0;S.forced.placed=false;
+      S.mpp=mpp;S.calib={auto:true,z,lat};S.capture={src:'IGN',z,lat:gl,lon:gn,mx:mk.x-nw.x,my:mk.y-nw.y,addr:S.mod.addr||null};
       $('imgInfo').innerHTML=`Capture IGN · ${W} × ${H} px · zoom ${z} · repère ${nf(gl,5)}, ${nf(gn,5)}<br><span class="small">Photos aériennes © IGN – Géoplateforme</span>`;
       show2d();fit();setMode('pan');renderCalib();renderEditor();changed();autoCollapse();toast('Capture prête, échelle réglée : tracez les pans');});}
   finally{btn.disabled=false;btn.textContent='Capturer cette vue';}}
@@ -1738,7 +1822,7 @@ new ResizeObserver(()=>document.documentElement.style.setProperty('--hdr',docume
 function restore(){let saved=null;try{saved=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
   if(!saved||(!saved.img&&!saved.isExample)){loadExample();return;}
   const apply=()=>{hist.length=0;S.pans=saved.pans||[];if(!saved.poseAuto)S.pans.forEach(p=>{p.pose='auto';p.off=[];});S.obstacles=saved.obstacles||[];S.calib=saved.calib||null;S.mpp=saved.mpp||null;
-    if(saved.mod&&(saved.modV2||saved.mod.preset==='custom')){Object.assign(S.mod,saved.mod);if(!saved.modV3&&S.mod.preset==='p2000'&&S.mod.wp===450)S.mod.wp=500;}else if(saved.mod){S.mod.margin=saved.mod.margin;S.mod.gap=saved.mod.gap;}if(saved.forced)S.forced=saved.forced;if(!saved.forcedV2){S.forced.on=true;S.forced.placed=false;}if(![3,6,9].includes(S.forced.target))S.forced.target=6;if(saved.capture)S.capture=saved.capture;if(saved.roofMode){S.roofMode=saved.roofMode;$('roofMode').value=saved.roofMode;}S.seq=saved.seq||50;S.colorIdx=saved.colorIdx||S.pans.length;renderModule();renderForced();fit();setMode('select');renderCalib();renderEditor();changed();autoCollapse();};
+    if(saved.mod&&(saved.modV2||saved.mod.preset==='custom')){Object.assign(S.mod,saved.mod);if(!saved.modV3&&S.mod.preset==='p2000'&&S.mod.wp===450)S.mod.wp=500;}else if(saved.mod){S.mod.margin=saved.mod.margin;S.mod.gap=saved.mod.gap;}if(saved.forced)S.forced=saved.forced;if(!saved.forcedV2){S.forced.on=true;S.forced.placed=false;}if(![3,6,9].includes(S.forced.target))S.forced.target=6;if(saved.report)S.report=saved.report;if(saved.capture)S.capture=saved.capture;if(saved.roofMode){S.roofMode=saved.roofMode;$('roofMode').value=saved.roofMode;}S.seq=saved.seq||50;S.colorIdx=saved.colorIdx||S.pans.length;renderModule();renderForced();fit();setMode('select');renderCalib();renderEditor();changed();autoCollapse();};
   if(saved.img)setImage(saved.img,false,apply);else setImage(makeExample(),true,apply);}
 renderModule();renderCalib();renderList();setHint();restore();pvCheck();
 {let u={};try{u=JSON.parse(localStorage.getItem('frh-ui')||'{}');}catch(e){}setCollapsed(4,u.c4!==false);setCollapsed(5,u.c5!==false);}
@@ -1799,9 +1883,28 @@ let S=JSON.parse(JSON.stringify(DEF));
 try{const s=JSON.parse(localStorage.getItem(SKEY)||'null');if(s){if(!s.v2){s.infl=2;s.v2=true;}S=Object.assign(S,s);}}catch(e){}
 S.v2=true;
 let saveT=null;const save=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(SKEY,JSON.stringify(S));}catch(e){}},300);};
+window.addEventListener('pagehide',()=>{if(saveT){clearTimeout(saveT);try{localStorage.setItem(SKEY,JSON.stringify(S));}catch(e){}}});
 
 /* ---------- calcul ---------- */
 function stdConfig(){return CONFIGS.find(c=>c.kwc===Math.round(S.power)&&c.batt===S.batt)||null;}
+/* ---------- le client ---------- */
+const CLI_DEF={civ:'M.',nom:'',prenom:'',adr:'',adrAuto:true,tel:'',mail:'',date:''};
+S.client=Object.assign({},CLI_DEF,S.client||{});
+const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+function getCom(){try{return localStorage.getItem('frh-commercial')||'';}catch(e){return'';}}
+function cliName(){const c=S.client;return [c.civ,c.prenom,c.nom?c.nom.toUpperCase():''].filter(Boolean).join(' ');}
+function renderClient(){const c=S.client;if(!c.date)c.date=todayISO();
+  const set=(id,v)=>{const el=$(id);if(document.activeElement!==el&&el.value!==v)el.value=v;};
+  set('cCiv',c.civ);set('cNom',c.nom);set('cPrenom',c.prenom);set('cAdr',c.adr);set('cTel',c.tel);set('cMail',c.mail);set('cDate',c.date);set('cCom',getCom());
+  $('cAdrInfo').textContent=c.adrAuto&&c.adr?'Reprise de l\'adresse recherchée sur la carte.':'';
+  $('sPerson').innerHTML=(c.nom||c.prenom)?`<b>${esc(cliName())}</b>${c.adr?' · '+esc(c.adr):''}`:'<span class="warn">Nom du client à saisir</span>';}
+[['cCiv','civ'],['cNom','nom'],['cPrenom','prenom'],['cAdr','adr'],['cTel','tel'],['cMail','mail'],['cDate','date']].forEach(([id,k])=>$(id).addEventListener('input',()=>{S.client[k]=$(id).value;if(k==='adr')S.client.adrAuto=false;save();renderClient();}));
+$('cCom').addEventListener('input',()=>{try{localStorage.setItem('frh-commercial',$('cCom').value);}catch(e){}renderClient();});
+$('cNew').addEventListener('click',()=>{if((S.client.nom||S.client.prenom)&&!confirmNew())return;S.client=Object.assign({},CLI_DEF,{date:todayISO()});if(CAL&&CAL.addr){S.client.adr=CAL.addr;}save();renderClient();$('cNom').focus();toast('Fiche client vidée');});
+function confirmNew(){const b=$('cNew');if(b.dataset.arm){delete b.dataset.arm;b.textContent='Nouveau client';return true;}b.dataset.arm='1';b.textContent='Confirmer : vider la fiche ?';setTimeout(()=>{if(b.dataset.arm){delete b.dataset.arm;b.textContent='Nouveau client';}},4000);return false;}
+function cliFromCal(){if(CAL&&CAL.addr&&S.client.adrAuto&&S.client.adr!==CAL.addr){S.client.adr=CAL.addr;save();}}
+renderClient();
+window.FRH_client=()=>Object.assign({},S.client,{com:getCom(),nomComplet:cliName()});
 /* ---------- liaison avec le calepinage (même page) ---------- */
 let CAL=window.FRH_CALEP||null;
 function syncCal(){if(![3,6,9].includes(S.power))S.power=6;if(!CAL)return;if(CAL.forcedOn&&[3,6,9].includes(CAL.target))S.power=CAL.target;
@@ -1812,7 +1915,7 @@ function renderCal(){const b=$('calBand');if(!CAL||(!CAL.hasRoof&&!CAL.terr)){b.
   $('calTxt').innerHTML=`<b>Toiture</b> : ${CAL.hasRoof?`${CAL.n} modules = ${nf(CAL.kwc,2)} kWc posés · productible <b>${nf(CAL.yield)} kWh/kWc</b> (${CAL.src})`:'aucun panneau posé'}${CAL.terr?` · ${esc(tName(CAL.terr))} (GPS)`:''}`
     +(short?`<br><span class="warnline">La toiture ne permet de poser que ${nf(CAL.kwc,2)} kWc sur les ${P} kWc choisis.</span>`:'');
   $('iUseCal').checked=S.useCal!==false;const on=S.useCal!==false;$('iYield').readOnly=on&&CAL.hasRoof&&CAL.yield>0;$('iTerr').disabled=on&&!!CAL.terr;}
-window.addEventListener('frh:calep',e=>{CAL=e.detail;render();if(!$('viewFin').hidden)renderFin();});
+window.addEventListener('frh:calep',e=>{CAL=e.detail;cliFromCal();renderClient();render();if(!$('viewFin').hidden)renderFin();});
 $('iUseCal').addEventListener('change',()=>{S.useCal=$('iUseCal').checked;if(!S.useCal)S.yield=null;render();});
 $('goRoof').addEventListener('click',()=>{const t=document.getElementById('tab2d');if(t)t.click();});
 window.FRH_simHide=()=>{if(typeof dayStop==='function')dayStop();};
@@ -1966,7 +2069,7 @@ $('sCopyBtn').addEventListener('click',()=>{const R=compute();const txt=`Simulat
   try{navigator.clipboard.writeText(txt).then(()=>{ta.hidden=true;toast('Résumé copié');},fb);}catch(e){fb();}});
 document.querySelectorAll('.card.coll .ctog').forEach(b=>b.addEventListener('click',()=>{const c=b.closest('.card');const v=!c.classList.contains('collapsed');c.classList.toggle('collapsed',v);b.setAttribute('aria-expanded',String(!v));
   try{const u=JSON.parse(localStorage.getItem('frh-simu-ui')||'{}');u[c.id]=v;localStorage.setItem('frh-simu-ui',JSON.stringify(u));}catch(e){}}));
-(function(){let u={};try{u=JSON.parse(localStorage.getItem('frh-simu-ui')||'{}');}catch(e){}const def={cClient:false,cInst:false,cEq:false,cHyp:true};
+(function(){let u={};try{u=JSON.parse(localStorage.getItem('frh-simu-ui')||'{}');}catch(e){}const def={cPerson:false,cClient:false,cInst:false,cEq:false,cHyp:true};
   Object.keys(def).forEach(id=>{const c=$(id),v=u[id]??def[id];c.classList.toggle('collapsed',v);c.querySelector('.ctog').setAttribute('aria-expanded',String(!v));});})();
 
 /* ---------- onglets ---------- */
