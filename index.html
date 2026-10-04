@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Calepinage FRH</title>
+<title>Étude solaire FRH</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
+
 /* Layout : plan de travail (capture + dessin / 3D) à gauche, panneau de réglages à droite ; empilés sur mobile */
 :root{
   --bg:#eef1f0; --surface:#ffffff; --ink:#16211e; --muted:#5d6b67; --line:#d6dfdb;
@@ -135,6 +136,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,label.btn:focus-wi
 .ptab td{padding:4px 4px;text-align:right;border-bottom:1px solid var(--line)}
 .ptab tr.sumrow td{font-weight:700;border-bottom:0}
 .small a{color:var(--accent)}
+.flabelc{font-weight:600;font-size:12.5px}
+#fSeg .tb{padding:6px 12px}
 .ctog{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .ctog::before{content:'▾';font-size:12px;color:var(--muted);transition:transform .15s}
 .ctog:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
@@ -151,22 +154,226 @@ button:focus-visible,input:focus-visible,select:focus-visible,label.btn:focus-wi
 .empty{font-size:12.5px;color:var(--muted);margin:0;padding:6px 2px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:9px;font-weight:600;font-size:13px;z-index:9;max-width:calc(100% - 32px)}
 textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:8px}
+
+:root{
+  --bg:#eef1f0; --surface:#ffffff; --ink:#16211e; --muted:#5d6b67; --line:#d6dfdb;
+  --accent:#d27a08; --accent-soft:#fbecd6; --on-accent:#ffffff; --stage:#dce3e0; --danger:#b8392a; --ok:#1f7a55;
+  --c-direct:#d27a08; --c-batt:#2f7fb8; --c-sell:#5e9a58; --c-grid:#b9c3bf; --c-buy:#b8483c;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"Figtree","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1513; --surface:#16201d; --ink:#e6eeeb; --muted:#98a8a3; --line:#2a3834;
+  --accent:#f0a33b; --accent-soft:#35280f; --on-accent:#1b1305; --stage:#0a100e; --danger:#f0806e; --ok:#4cc58f;
+  --c-direct:#f0a33b; --c-batt:#5aa8e0; --c-sell:#7cc174; --c-grid:#3a4945; --c-buy:#e07a6c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1513; --surface:#16201d; --ink:#e6eeeb; --muted:#98a8a3; --line:#2a3834;
+  --accent:#f0a33b; --accent-soft:#35280f; --on-accent:#1b1305; --stage:#0a100e; --danger:#f0806e; --ok:#4cc58f;
+  --c-direct:#f0a33b; --c-batt:#5aa8e0; --c-sell:#7cc174; --c-grid:#3a4945; --c-buy:#e07a6c; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45;padding-inline:16px;padding-block:16px 24px}
+#appSim .app{max-width:1500px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+#appSim .top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:20;background:var(--bg);margin:-16px -16px 0;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 10px;box-shadow:0 1px 0 var(--line)}
+#appSim .brand{font:700 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+#appSim h1{font:700 clamp(22px,3vw,30px)/1.05 var(--display);margin:5px 0 0}
+#appSim .tabs{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+#appSim .tabs button{font:600 13px var(--body);border:0;background:none;color:var(--muted);padding:7px 14px;border-radius:7px;cursor:pointer}
+#appSim .tabs button.on{background:var(--ink);color:var(--bg)}
+#appSim .layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:start}
+@media (max-width:1020px){#appSim .layout{grid-template-columns:minmax(0,1fr)}
+#appSim .side{order:-1}}
+#appSim .main{display:flex;flex-direction:column;gap:12px;min-width:0}
+#appSim .side{display:flex;flex-direction:column;gap:12px;min-width:0}
+@media (min-width:1021px){#appSim .side{position:sticky;top:calc(var(--hdr,72px) + 8px);max-height:calc(100vh - var(--hdr,72px) - 40px);overflow-y:auto;overscroll-behavior:contain;padding-right:6px;scrollbar-width:thin}
+
+}
+#appSim .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+#appSim .card h2{font:700 15px/1.2 var(--display);margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+#appSim .card h3{font:700 14px/1.2 var(--display);margin:0}
+#appSim .step{font:700 10.5px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+#appSim .small{font-size:12.5px;color:var(--muted);margin:0}
+#appSim .field{display:flex;flex-direction:column;gap:4px;min-width:0}
+#appSim .field label,#appSim .flabel{font-weight:600;font-size:12.5px}
+#appSim input[type=number],#appSim input[type=text],#appSim input[type=date],#appSim select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:7px 9px;width:100%;min-width:0}
+#appSim .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#appSim .btn{font:600 13px var(--body);border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:7px 11px;border-radius:7px;cursor:pointer;text-align:center}
+#appSim .btn:hover{border-color:var(--accent)}
+#appSim .btn.acc{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+#appSim .btn.danger{color:var(--danger)}
+#appSim .btnrow{display:flex;flex-wrap:wrap;gap:6px}
+#appSim button:focus-visible,#appSim input:focus-visible,#appSim select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#appSim .seg{display:flex;flex-wrap:wrap;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:3px}
+#appSim .seg button{flex:1;font:600 13px var(--body);border:0;background:none;color:var(--ink);padding:7px 8px;border-radius:6px;cursor:pointer;white-space:nowrap}
+#appSim .seg button.on{background:var(--accent);color:var(--on-accent)}
+#appSim .pill{font:700 11px var(--body);padding:3px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+#appSim .pill.ok{background:transparent;border:1px solid var(--ok);color:var(--ok)}
+#appSim .pill.warn{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+#appSim .ctog{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+#appSim .ctog::before{content:'▾';font-size:12px;color:var(--muted);transition:transform .15s}
+#appSim .ctog:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+#appSim .card.collapsed .ctog::before{transform:rotate(-90deg)}
+#appSim .card.collapsed>*:not(h2):not(.csum){display:none!important}
+#appSim .card:not(.collapsed)>.csum{display:none}
+#appSim .csum{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#appSim .warnline{font-size:12.5px;color:var(--danger);font-weight:600;margin:0}
+#appSim .hero{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#appSim .infogrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start;max-width:1100px;margin:0 auto;width:100%}
+@media (max-width:860px){#appSim .infogrid{grid-template-columns:minmax(0,1fr)}}
+#appSim .infocol{display:flex;flex-direction:column;gap:12px;min-width:0}
+#appSim .ctacard{align-items:flex-start}
+#appSim .btn.big{font-size:15px;padding:11px 18px}
+#appSim .resfoot{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#appSim .resfoot textarea{flex-basis:100%}
+#appSim #viewRes .main{max-width:1200px;margin:0 auto;width:100%}
+#appSim .hero2{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:900px){#appSim .hero2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){#appSim .hero2{grid-template-columns:1fr}}
+@media (max-width:760px){#appSim .hero{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#appSim .kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:3px;min-width:0}
+#appSim .kpi .k{font-size:12px;color:var(--muted)}
+#appSim .kpi .v{font:700 clamp(22px,2.4vw,30px)/1.1 var(--display);font-variant-numeric:tabular-nums}
+#appSim .kpi .v small.plus{font:600 13px var(--body);color:var(--muted);white-space:nowrap}
+#appSim .kpi .s{font-size:12px;color:var(--muted)}
+#appSim .kpi.main{border-color:var(--accent);background:linear-gradient(0deg,var(--accent-soft),var(--accent-soft)) padding-box}
+#appSim .kpi.main .v{color:var(--accent)}
+#appSim .kgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:760px){#appSim .kgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#appSim .mini{display:flex;flex-direction:column;gap:2px}
+#appSim .mini .k{font-size:11.5px;color:var(--muted)}
+#appSim .mini .v{font:700 19px/1.15 var(--display);font-variant-numeric:tabular-nums}
+#appSim .cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:12px}
+@media (max-width:900px){#appSim .cols{grid-template-columns:minmax(0,1fr)}}
+#appSim .bar{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--c-grid);gap:2px}
+#appSim .bar span{display:block;height:100%;min-width:0}
+#appSim .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+#appSim .legend b{color:var(--ink);font-variant-numeric:tabular-nums}
+#appSim .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+#appSim table.t{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+#appSim table.t th{font-weight:600;color:var(--muted);text-align:right;padding:6px 6px;border-bottom:1px solid var(--line);font-size:12px}
+#appSim table.t td{padding:6px 6px;text-align:right;border-bottom:1px solid var(--line)}
+#appSim table.t th:first-child,#appSim table.t td:first-child{text-align:left}
+#appSim table.t tr.sumrow td{font-weight:700;border-bottom:0}
+#appSim table.t td.neg{color:var(--danger)}
+#appSim .chartwrap{position:relative}
+#appSim #cashChart svg{width:100%;height:auto;display:block}
+#appSim #cashChart .gl{stroke:var(--line)}
+#appSim #cashChart .zero{stroke:var(--muted);stroke-width:1.2}
+#appSim #cashChart .ax{font:10.5px var(--body);fill:var(--muted)}
+#appSim #cashChart .area{fill:var(--accent);opacity:.12}
+#appSim #cashChart .line{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round}
+#appSim #cashChart .pb{stroke:var(--ok);stroke-dasharray:4 4}
+#appSim #cashChart .pbt{font:700 11.5px var(--body);fill:var(--ok)}
+#appSim #cashChart .hit{fill:transparent}
+#appSim #cashChart .cur{stroke:var(--muted);stroke-width:1}
+#appSim .ptip{position:absolute;background:var(--ink);color:var(--bg);font:600 12px var(--body);padding:5px 8px;border-radius:6px;pointer-events:none;white-space:nowrap;transform:translate(-50%,-110%);font-variant-numeric:tabular-nums;line-height:1.35}
+#appSim .story{font-size:14px;line-height:1.6;margin:0;max-width:80ch}
+#appSim .story b{font-variant-numeric:tabular-nums}
+#appSim .backup{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:760px){#appSim .backup{grid-template-columns:1fr}}
+#appSim .bk{background:var(--bg);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+#appSim .bk .v{font:700 18px/1.2 var(--display);font-variant-numeric:tabular-nums}
+#appSim .bk .k{font-size:11.5px;color:var(--muted)}
+#appSim .eqlist{display:flex;flex-direction:column;gap:6px}
+#appSim .eq{display:grid;grid-template-columns:17px minmax(0,1fr) 58px 58px;gap:6px;align-items:center;font-size:13px}
+#appSim .eq input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent)}
+#appSim .eq input[type=number]{padding:5px 6px}
+#appSim .eq .nm{display:flex;flex-direction:column;line-height:1.2}
+#appSim .eq .nm span{font-size:11px;color:var(--muted)}
+#appSim .eqhead{display:grid;grid-template-columns:17px minmax(0,1fr) 58px 58px;gap:6px;font-size:11px;color:var(--muted)}
+#appSim .tariff td input{padding:5px 7px;text-align:right}
+#appSim .badge{display:inline-flex;align-items:center;gap:6px}
+#appSim .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:9px;font-weight:600;font-size:13px;z-index:40;max-width:calc(100% - 32px)}
+#appSim .calband{display:flex;flex-direction:column;gap:6px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:9px;padding:10px 12px;font-size:12.5px}
+#appSim .calband .btn{align-self:flex-start;padding:5px 10px}
+#appSim .ucal{display:flex;align-items:center;gap:6px;font-weight:600;cursor:pointer}
+#appSim .ucal input{width:15px;height:15px;accent-color:var(--accent);margin:0}
+#appSim .pricebox{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:7px 10px}
+#appSim .pricebox .pv{font:700 18px var(--display);font-variant-numeric:tabular-nums}
+#appSim .rs{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;opacity:.7}
+#appSim .rs input{width:13px;height:13px;accent-color:var(--accent);margin:0}
+#appSim .rs:hover{opacity:1}
+#appSim .finwrap{display:flex;flex-direction:column;gap:12px;max-width:1200px;margin:0 auto;width:100%}
+#appSim .finin{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:760px){#appSim .finin{grid-template-columns:1fr}}
+#appSim .scen{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:860px){#appSim .scen{grid-template-columns:1fr}}
+#appSim .sc{border:2px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;text-align:center;align-items:center}
+#appSim .sc.a{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+#appSim .sc.b{border-color:color-mix(in srgb,var(--c-batt) 45%,var(--line))}
+#appSim .sc.c{border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+#appSim .sc .st{font:700 10.5px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+#appSim .sc .sub{font-size:12px;color:var(--muted);min-height:2.6em}
+#appSim .sc .dur{font:700 30px/1 var(--display);font-variant-numeric:tabular-nums}
+#appSim .sc .dur small{font:600 13px var(--body);color:var(--muted)}
+#appSim .sc .mens{font:700 22px var(--display);font-variant-numeric:tabular-nums}
+#appSim .sc .mens small{font:500 12px var(--body);color:var(--muted)}
+#appSim .sc .cap{font-size:12.5px;color:var(--muted)}
+#appSim .sc .cap b{color:var(--ink)}
+#appSim .sc .det{font-size:11.5px;color:var(--muted);line-height:1.45}
+#appSim .okp{font:700 11.5px var(--body);padding:3px 9px;border-radius:99px;border:1px solid var(--ok);color:var(--ok)}
+#appSim .kop{font:700 11.5px var(--body);padding:3px 9px;border-radius:99px;border:1px solid var(--danger);color:var(--danger)}
+#appSim table.mens td input{width:84px}
+#appSim .daywrap{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start;max-width:1300px;margin:0 auto;width:100%}
+@media (max-width:1000px){#appSim .daywrap{grid-template-columns:minmax(0,1fr)}}
+#appSim .scenecard{padding:10px}
+#appSim .scenebox{border-radius:10px;overflow:hidden;background:#0f1d33}
+#appSim #scene{width:100%;height:auto;display:block}
+#appSim #scene text{font-family:var(--body)}
+#appSim .daybar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+#appSim .daybar input[type=range]{flex:1;min-width:160px;accent-color:var(--accent)}
+#appSim .dclock{font:700 22px var(--display);font-variant-numeric:tabular-nums;min-width:70px;text-align:center}
+#appSim .daybar .seg{flex:0 0 auto}
+#appSim .daypanel{display:flex;flex-direction:column;gap:12px;min-width:0}
+#appSim .phase{font:600 17px/1.4 var(--display);margin:0;min-height:3em}
+#appSim .flows{display:flex;flex-direction:column;gap:7px}
+#appSim .frow{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13.5px;font-variant-numeric:tabular-nums}
+#appSim .frow .dot{margin:0}
+#appSim .frow b{font-weight:700}
+#appSim .frow.off{opacity:.38}
+#appSim .flowpath{fill:none;stroke-linecap:round;stroke-dasharray:2 14}
+#appSim textarea.copy{width:100%;min-height:140px;font:12px/1.4 ui-monospace,monospace;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:8px}
+
+
+
+/* ---- application fusionnée ---- */
+#appCalep,#appSim{display:flex;flex-direction:column;gap:14px;min-width:0}
+.navs{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.tabs .tgl{font:700 10px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);align-self:center;padding:0 6px 0 8px}
+@media (max-width:760px){.tabs .tgl{display:none}}
 </style>
 </head>
 <body>
 
+
 <div class="app">
-  <header class="top">
+  <header class="top" id="top">
     <div>
       <div class="brand">FRH · Photovoltaïque</div>
-      <h1>Calepinage toiture</h1>
+      <h1>Étude solaire</h1>
     </div>
-    <div class="tabs" role="tablist" aria-label="Vue">
-      <button type="button" id="tabMap" role="tab" aria-selected="false">Carte</button>
-      <button type="button" id="tab2d" class="on" role="tab" aria-selected="true">Plan 2D</button>
-      <button type="button" id="tab3d" role="tab" aria-selected="false">Vue 3D</button>
-    </div>
+    <nav class="navs" aria-label="Étapes">
+      <div class="tabs" role="tablist" aria-label="Toiture">
+        <span class="tgl">Toiture</span>
+        <button type="button" id="tabMap" role="tab" aria-selected="false">Carte</button>
+        <button type="button" id="tab2d" class="on" role="tab" aria-selected="true">Plan 2D</button>
+        <button type="button" id="tab3d" role="tab" aria-selected="false">Vue 3D</button>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Simulation">
+        <span class="tgl">Simulation</span>
+        <button type="button" id="tabInfo" role="tab" aria-selected="false">1. Informations</button>
+        <button type="button" id="tabRes" role="tab" aria-selected="false">2. Résultats</button>
+        <button type="button" id="tabDay" role="tab" aria-selected="false">3. Ma journée</button>
+        <button type="button" id="tabFin" role="tab" aria-selected="false">4. Financement</button>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Réglages">
+        <button type="button" id="tabTar" role="tab" aria-selected="false" title="Prix, mensualités, tarifs">Paramètres</button>
+      </div>
+    </nav>
   </header>
+
+  <div id="appCalep">
+
 
   <div class="layout">
     <main class="work">
@@ -288,8 +495,10 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
         <h2>Puissance imposée <span class="step">Étape 4</span></h2>
         <label class="switch"><input type="checkbox" id="fOn"><span>Poser une puissance donnée, en commençant par les pans les plus productifs</span></label>
         <div id="fBox" hidden class="field">
-          <label for="fTarget">Puissance voulue (kWc)</label>
-          <div class="btnrow"><input type="number" id="fTarget" min="0.5" step="0.5" style="flex:1"><button type="button" class="btn acc" id="fPlace">Poser les panneaux</button></div>
+          <span class="flabelc">Puissance voulue</span>
+          <div class="btnrow" style="align-items:center"><div class="group" id="fSeg"><button type="button" class="tb" data-v="3">3 kWc</button><button type="button" class="tb" data-v="6">6 kWc</button><button type="button" class="tb" data-v="9">9 kWc</button></div>
+            <button type="button" class="btn" id="fPlace">Reposer les panneaux</button><input type="hidden" id="fTarget"></div>
+          <p class="small">Synchronisée avec la simulation : changer la puissance ici ou dans « L'installation » repose automatiquement les panneaux.</p>
           <p class="readout" id="fInfo"></p>
         </div>
       </section>
@@ -357,8 +566,285 @@ textarea.copy{width:100%;min-height:120px;font:12px/1.4 ui-monospace,monospace;b
       </section>
     </aside>
   </div>
+
+  </div>
+
+  <div id="appSim" hidden>
+
+
+  <!-- ===================== SIMULATION ===================== -->
+  <!-- 1. relevé d'informations -->
+  <div id="viewInfo">
+    <div class="infogrid">
+      <div class="infocol">
+      <section class="card coll" id="cClient">
+        <h2><button type="button" class="ctog" aria-expanded="true">Le foyer</button> <span class="step">Étape 1</span></h2>
+        <p class="small csum" id="sClient"></p>
+        <div class="field"><label for="iTerr">Territoire</label><select id="iTerr"></select></div>
+        <div class="two">
+          <div class="field"><label for="iBill">Facture mensuelle (€)</label><input type="number" id="iBill" min="0" step="1"></div>
+          <div class="field"><label for="iPrice">Prix du kWh (€)</label><input type="number" id="iPrice" min="0.01" step="0.01"></div>
+        </div>
+        <div class="field"><label for="iInfl">Hausse annuelle du prix de l'électricité (%)</label><input type="number" id="iInfl" min="0" max="15" step="0.5">
+          <span class="small">Appliquée chaque année aux économies, dans le retour sur investissement et le gain sur 20 ans.</span></div>
+        <p class="small" id="consoInfo"></p>
+        <div class="field"><span class="flabel">Consommation en journée</span>
+          <div class="seg" id="iShare"><button type="button" data-v="0.3">30 %</button><button type="button" data-v="0.4">40 %</button><button type="button" data-v="0.5">50 %</button><button type="button" data-v="0.6">60 %</button></div>
+          <span class="small" id="shareHint"></span></div>
+      </section>
+
+      <section class="card coll" id="cEq">
+        <h2><button type="button" class="ctog" aria-expanded="true">Appareils la nuit et en coupure</button></h2>
+        <p class="small csum" id="sEq"></p>
+        <p class="small">Appareils déjà inclus dans la facture. S'ils consomment plus que la part de nuit du profil, la répartition jour/nuit s'ajuste. Sert aussi à calculer l'autonomie de la batterie en cas de coupure.</p>
+        <div class="eqhead"><span></span><span>Appareil</span><span>Qté</span><span>h/nuit</span></div>
+        <div class="eqlist" id="eqList"></div>
+        <p class="small" id="eqInfo"></p>
+      </section>
+
+      </div>
+      <div class="infocol">
+      <section class="card coll" id="cInst">
+        <h2><button type="button" class="ctog" aria-expanded="true">L'installation</button> <span class="step">Étape 2</span></h2>
+        <p class="small csum" id="sInst"></p>
+        <div class="calband" id="calBand" hidden>
+          <div id="calTxt"></div>
+          <label class="ucal"><input type="checkbox" id="iUseCal"> Utiliser le productible et le territoire de la toiture</label>
+          <button type="button" class="btn" id="goRoof">Voir la toiture</button>
+        </div>
+        <div class="field"><span class="flabel">Puissance</span>
+          <div class="seg" id="pQuick"><button type="button" data-v="3">3 kWc</button><button type="button" data-v="6">6 kWc</button><button type="button" data-v="9">9 kWc</button></div><input type="hidden" id="iPower">
+          <span class="small" id="bandInfo"></span></div>
+        <div class="field"><label for="iYield">Productible (kWh par kWc et par an)</label><input type="number" id="iYield" min="500" max="2500" step="10">
+          <span class="small">Vient de la toiture dessinée (PVGIS) quand elle existe, sinon valeur moyenne du territoire.</span></div>
+        <div class="field"><span class="flabel">Batterie</span>
+          <div class="seg" id="iBatt"><button type="button" data-v="8">Batterie 8 kWh</button><button type="button" data-v="0">Sans batterie</button></div></div>
+        <div class="field"><span class="flabel">Prix de l'installation TTC</span>
+          <div class="pricebox" id="stdPriceBox"><span class="pv" id="stdPrice"></span><label class="rs" title="Remise spéciale"><input type="checkbox" id="iRS"> RS</label></div>
+          <div id="manPriceBox" hidden><input type="number" id="iCost" min="0" step="100" aria-label="Prix de l'installation TTC"></div>
+          <span class="small" id="priceInfo"></span></div>
+      </section>
+
+      <section class="card coll" id="cHyp">
+        <h2><button type="button" class="ctog" aria-expanded="true">Hypothèses</button></h2>
+        <p class="small csum" id="sHyp"></p>
+        <div class="field"><label for="iDeg">Vieillissement des panneaux (%/an)</label><input type="number" id="iDeg" min="0" max="2" step="0.1"></div>
+        <div class="two">
+          <div class="field"><label for="iUse">Capacité utile batterie (%)</label><input type="number" id="iUse" min="50" max="100" step="1"></div>
+          <div class="field"><label for="iEff">Rendement charge/décharge (%)</label><input type="number" id="iEff" min="70" max="100" step="1"></div>
+        </div>
+        <div class="btnrow"><button type="button" class="btn" id="resetBtn">Valeurs par défaut</button></div>
+      </section>
+
+        <section class="card ctacard"><p class="small">Une fois les informations relevées avec le client :</p><button type="button" class="btn acc big" id="goRes">Voir les résultats →</button></section>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. résultats -->
+  <div id="viewRes" hidden>
+    <main class="main" aria-live="polite">
+      <div class="hero">
+        <div class="kpi main"><span class="k">Total économies + revente par mois</span><span class="v" id="kTot"></span><span class="s" id="kTotS"></span></div>
+        <div class="kpi"><span class="k">Économie d'électricité par mois</span><span class="v" id="kSave"></span><span class="s" id="kSaveS"></span></div>
+        <div class="kpi"><span class="k">Revente du surplus par mois</span><span class="v" id="kSell"></span><span class="s" id="kSellS"></span></div>
+        <div class="kpi"><span class="k">Nouvelle facture</span><span class="v" id="kBill"></span><span class="s" id="kBillS"></span></div>
+      </div>
+      <div class="hero2">
+        <div class="kpi"><span class="k">Moyenne économies + revente par mois sur 20 ans</span><span class="v" id="kAvg"></span><span class="s" id="kAvgS"></span></div>
+        <div class="kpi"><span class="k">Total des économies sur 20 ans</span><span class="v" id="kGain"></span><span class="s" id="kGainS"></span></div>
+        <div class="kpi"><span class="k">Retour sur investissement</span><span class="v" id="kRoi"></span><span class="s" id="kRoiS"></span></div>
+      </div>
+
+      <section class="card">
+        <div class="kgrid">
+          <div class="mini"><span class="k">Production solaire</span><span class="v" id="mProd"></span></div>
+          <div class="mini"><span class="k">Autonomie du foyer</span><span class="v" id="mAuto"></span></div>
+          <div class="mini"><span class="k">Coût net après prime</span><span class="v" id="mSell"></span></div>
+          <div class="mini"><span class="k">Prime à l'autoconsommation</span><span class="v" id="mPrime"></span></div>
+        </div>
+      </section>
+
+      <div class="cols">
+        <section class="card">
+          <h2>Trésorerie cumulée <span class="step" id="cashSub"></span></h2>
+          <div class="chartwrap"><div id="cashChart"></div><div class="ptip" id="cashTip" hidden></div></div>
+          <p class="small">Investissement déduit, prime versée la <span id="primeYearTxt">2ᵉ</span> année, revente pendant les 20 ans du contrat, économies revalorisées chaque année avec la hausse du prix de l'électricité.</p>
+        </section>
+        <section class="card">
+          <h2>D'où vient votre électricité</h2>
+          <div class="bar" aria-hidden="true"><span id="bDirect" style="background:var(--c-direct)"></span><span id="bBatt" style="background:var(--c-batt)"></span><span id="bGrid" style="background:var(--c-grid)"></span></div>
+          <div class="legend">
+            <span><i class="dot" style="background:var(--c-direct)"></i>Soleil en direct <b id="lDirect"></b></span>
+            <span id="lBattWrap"><i class="dot" style="background:var(--c-batt)"></i>Batterie <b id="lBatt"></b></span>
+            <span><i class="dot" style="background:var(--c-grid)"></i>Réseau <b id="lGrid"></b></span>
+          </div>
+          <h3 style="margin-top:6px">Et la production solaire</h3>
+          <div class="bar" aria-hidden="true"><span id="pDirect" style="background:var(--c-direct)"></span><span id="pBatt" style="background:var(--c-batt)"></span><span id="pSell" style="background:var(--c-sell)"></span></div>
+          <div class="legend">
+            <span><i class="dot" style="background:var(--c-direct)"></i>Consommée en direct <b id="qDirect"></b></span>
+            <span id="qBattWrap"><i class="dot" style="background:var(--c-batt)"></i>Stockée <b id="qBatt"></b></span>
+            <span><i class="dot" style="background:var(--c-sell)"></i>Revendue <b id="qSell"></b></span>
+          </div>
+        </section>
+      </div>
+
+      <section class="card" id="backupCard">
+        <h2>Batterie et coupures de courant</h2>
+        <div class="backup">
+          <div class="bk"><span class="v" id="bkHours"></span><span class="k">d'autonomie pour les appareils cochés, batterie pleine (hors voiture)</span></div>
+          <div class="bk"><span class="v" id="bkNight"></span><span class="k">de la consommation de nuit couverte par la batterie</span></div>
+          <div class="bk"><span class="v" id="bkStored"></span><span class="k">stockés chaque jour (capacité utile <span id="bkUseful"></span>)</span></div>
+        </div>
+      </section>
+
+      <div class="cols">
+        <section class="card">
+          <h2>Bilan financier</h2>
+          <table class="t">
+            <tbody id="finRows"></tbody>
+          </table>
+        </section>
+        <section class="card">
+          <h2>Bilan énergétique</h2>
+          <table class="t">
+            <thead><tr><th>kWh</th><th>par jour</th><th>par mois</th><th>par an</th></tr></thead>
+            <tbody id="enRows"></tbody>
+          </table>
+        </section>
+      </div>
+
+      <section class="card">
+        <h2>En résumé pour le client</h2>
+        <p class="story" id="story"></p>
+        <p class="small">Simulation sur une journée moyenne de l'année. La production réelle varie selon la saison, la météo, l'orientation et les ombrages. Hausse du prix de l'électricité et vieillissement des panneaux selon les hypothèses du panneau de droite. Tarifs de rachat et primes : <span id="tarDate"></span>.</p>
+      </section>
+      <div class="resfoot"><button type="button" class="btn" id="backInfo">← Modifier les informations</button>
+        <div class="btnrow"><button type="button" class="btn acc" id="sCopyBtn">Copier le résumé</button></div>
+        <textarea class="copy" id="sCopyArea" hidden readonly aria-label="Résumé à copier"></textarea>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===================== 3. MA JOURNÉE ===================== -->
+  <div id="viewDay" hidden>
+    <div class="daywrap">
+      <section class="card scenecard">
+        <div class="scenebox"><svg id="scene" viewBox="0 0 960 470" role="img" aria-label="Animation d'une journée type : production solaire, batterie et réseau"></svg></div>
+        <div class="daybar">
+          <button type="button" class="btn acc" id="dPlay">Lecture</button>
+          <input type="range" id="dTime" min="0" max="23.75" step="0.25" aria-label="Heure de la journée, de 6 h à 6 h le lendemain">
+          <span class="dclock" id="dClock">06:00</span>
+          <div class="seg" id="dSpeed"><button type="button" data-v="1">×1</button><button type="button" data-v="2">×2</button><button type="button" data-v="4">×4</button></div>
+        </div>
+      </section>
+      <aside class="daypanel">
+        <section class="card">
+          <span class="step" id="dPhaseT"></span>
+          <p class="phase" id="dPhase"></p>
+        </section>
+        <section class="card">
+          <h2>En ce moment</h2>
+          <div class="flows" id="dFlows"></div>
+        </section>
+        <section class="card">
+          <h2>Depuis 6 h du matin</h2>
+          <div class="flows" id="dCum"></div>
+          <p class="small" id="dNote"></p>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ===================== 4. FINANCEMENT ===================== -->
+  <div id="viewFin" hidden>
+    <div class="finwrap">
+      <section class="card">
+        <h2>Le crédit</h2>
+        <div class="finin">
+          <div class="field"><label for="fBirth">Date de naissance du client</label><input type="date" id="fBirth"></div>
+          <div class="field"><label for="fInst">Date d'installation</label><input type="date" id="fInst"></div>
+          <div class="field"><span class="flabel">Installation financée</span><p class="small" id="fConf" style="margin-top:6px"></p></div>
+        </div>
+        <p class="small" id="fDates"></p>
+      </section>
+      <div class="hero">
+        <div class="kpi"><span class="k">Prix de l'installation</span><span class="v" id="fPrix"></span><span class="s" id="fPrixS"></span></div>
+        <div class="kpi"><span class="k">Prime à l'autoconsommation</span><span class="v" id="fPrime"></span><span class="s" id="fPrimeS"></span></div>
+        <div class="kpi main"><span class="k">Gain moyen par mois</span><span class="v" id="fGain"></span><span class="s">économies + revente, moyenne sur 20 ans</span></div>
+        <div class="kpi"><span class="k">Retour sur investissement</span><span class="v" id="fRoi"></span><span class="s" id="fRoiS"></span></div>
+      </div>
+      <section class="card">
+        <h2>Scénarios de financement</h2>
+        <p class="small">Le crédit démarre 6 mois après l'installation. Après 12 mensualités, la prime est versée et réduit le capital : un nouveau crédit est calculé sur le capital restant.</p>
+        <div id="fScen"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ===================== PARAMÈTRES ===================== -->
+  <div id="viewTar" hidden>
+    <div class="layout" style="grid-template-columns:minmax(0,1fr) 360px">
+      <main class="main">
+        <section class="card">
+          <h2>Prix des installations <span class="badge" id="tarState"></span></h2>
+          <div style="overflow-x:auto">
+            <table class="t tariff">
+              <thead><tr><th>Installation</th><th>Prix standard (€)</th><th>Remise spéciale RS (€)</th><th>Prix avec RS</th><th>Prime (territoire du client)</th></tr></thead>
+              <tbody id="pRows"></tbody>
+            </table>
+          </div>
+          <p class="small">Prix TTC proposés au client. La remise RS est le montant que le commercial peut accorder avec le bouton RS. La prime est calculée automatiquement d'après les tarifs ci-dessous.</p>
+        </section>
+        <section class="card">
+          <h2>Mensualités du financeur</h2>
+          <div style="overflow-x:auto">
+            <table class="t tariff mens">
+              <thead><tr><th>Installation</th><th></th><th>60 mois</th><th>96 mois</th><th>120 mois</th><th>144 mois</th><th>180 mois</th></tr></thead>
+              <tbody id="mRows"></tbody>
+            </table>
+          </div>
+          <p class="small">Mensualités réelles communiquées par l'organisme de crédit, pour le prix standard et pour le prix avec RS. À mettre à jour quand le financeur change ses taux.</p>
+        </section>
+        <section class="card">
+          <h2>Tarifs de rachat et primes</h2>
+          <div class="two" style="max-width:520px">
+            <div class="field"><label for="tTerr">Territoire</label><select id="tTerr"></select></div>
+            <div class="field"><label for="tDate">Date de mise à jour</label><input type="date" id="tDate"></div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="t tariff">
+              <thead><tr><th>Tranche de puissance</th><th>Tarif de rachat (€/kWh)</th><th>Prime (€/Wc)</th><th>Prime pour la tranche</th></tr></thead>
+              <tbody id="tRows"></tbody>
+            </table>
+          </div>
+          <div class="two" style="max-width:520px">
+            <div class="field"><label for="tYear">Prime versée l'année</label><input type="number" id="tYear" min="1" max="5" step="1"></div>
+            <div class="field"><label for="tYield">Productible par défaut (kWh/kWc/an)</label><input type="number" id="tYield" min="500" max="2500" step="10"></div>
+          </div>
+          <p class="small">Chaque tranche commence juste au-dessus de la précédente : « 4 à 9 kWc » couvre de plus de 3 kWc jusqu'à 9 kWc inclus. Les modifications s'appliquent tout de suite à la simulation sur cet appareil.</p>
+        </section>
+      </main>
+      <aside class="side">
+        <section class="card">
+          <h2>Publier pour tous les commerciaux</h2>
+          <p class="small">Les prix, mensualités et tarifs modifiés ici ne valent que sur cet appareil. Pour les donner à toute l'équipe, téléchargez le fichier <b>tarifs.json</b> et remplacez-le sur GitHub : chaque commercial les recevra au prochain chargement.</p>
+          <div class="btnrow">
+            <button type="button" class="btn acc" id="tDown">Télécharger tarifs.json</button>
+            <button type="button" class="btn" id="tCopy">Copier le contenu</button>
+          </div>
+          <textarea class="copy" id="sTArea" hidden readonly aria-label="Contenu de tarifs.json"></textarea>
+          <div class="btnrow"><button type="button" class="btn danger" id="tReset">Revenir aux paramètres publiés</button></div>
+          <p class="small" id="tSource"></p>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  </div>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div class="toast" id="sToast" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -373,7 +859,7 @@ const KEY='frh-calepinage-v1';
 const S={img:null,imgURL:null,imgW:0,imgH:0,isExample:false,mpp:null,calib:null,pans:[],obstacles:[],
   mod:{src:'auto',loss:14,preset:'p2000',w:1000,h:2000,wp:500,margin:30,gap:2,lat:48.9,shade:'1014',site:4,ghi:1220,pr:80},
   sel:null,mode:'select',sub:null,draft:[],calibDraft:[],hover:null,snap:null,shift:false,
-  forced:{on:false,target:6,placed:false},view:{s:1,ox:0,oy:0},layouts:{},seq:1,colorIdx:0,view3d:false};
+  forced:{on:true,target:6,placed:false},view:{s:1,ox:0,oy:0},layouts:{},seq:1,colorIdx:0,view3d:false};
 const hist=[];
 
 /* ---------- utilitaires ---------- */
@@ -553,9 +1039,9 @@ function snapshot(){hist.push(JSON.stringify({pans:S.pans,obstacles:S.obstacles,
 function undo(){const s=hist.pop();if(!s){toast('Rien à annuler');return;}const o=JSON.parse(s);S.pans=o.pans;S.obstacles=o.obstacles;S.calib=o.calib;S.mpp=o.mpp;if(o.forced)S.forced=o.forced;renderForced();
   if(S.sel&&!selItem())S.sel=null;S.draft=[];changed();renderEditor();renderCalib();}
 let saveT=null;
-function save(){clearTimeout(saveT);saveT=setTimeout(()=>{const base={v:1,isExample:S.isExample,pans:S.pans,obstacles:S.obstacles,calib:S.calib,mpp:S.mpp,mod:S.mod,modV2:true,modV3:true,seq:S.seq,colorIdx:S.colorIdx,roofMode:S.roofMode,poseAuto:true,forced:S.forced,capture:S.capture||null};
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{const base={v:1,isExample:S.isExample,pans:S.pans,obstacles:S.obstacles,calib:S.calib,mpp:S.mpp,mod:S.mod,modV2:true,modV3:true,seq:S.seq,colorIdx:S.colorIdx,roofMode:S.roofMode,poseAuto:true,forcedV2:true,forced:S.forced,capture:S.capture||null};
   try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:S.isExample?null:S.imgURL},base)));}catch(e){try{localStorage.setItem(KEY,JSON.stringify(Object.assign({img:null,imgLost:true},base)));}catch(_){}}},400);}
-function changed(){recalc();if(typeof renderSums==='function')try{renderSums();}catch(e){}if(typeof renderQuick==='function')renderQuick();if(typeof renderPvStatus==='function'&&$('pvStatus'))renderPvStatus();if(typeof renderForced==='function'&&$('fOn'))try{renderForced();}catch(e){}renderList();renderSummary();renderReadout();draw();T3.dirty=true;if(S.view3d)show3d();save();}
+function changed(){recalc();if(typeof autoPlace==='function'){try{autoPlace();emitCalep();}catch(e){}}if(typeof renderSums==='function')try{renderSums();}catch(e){}if(typeof renderQuick==='function')renderQuick();if(typeof renderPvStatus==='function'&&$('pvStatus'))renderPvStatus();if(typeof renderForced==='function'&&$('fOn'))try{renderForced();}catch(e){}renderList();renderSummary();renderReadout();draw();T3.dirty=true;if(S.view3d)show3d();save();}
 function selItem(){if(!S.sel)return null;return S.sel.type==='pan'?S.pans.find(p=>p.id===S.sel.id):S.obstacles.find(o=>o.id===S.sel.id);}
 function select(type,id){S.sel=type?{type,id}:null;S.sub=null;S.eaveHover=null;renderList();renderEditor();draw();setHint();}
 function deleteSel(){const it=selItem();if(!it)return;snapshot();if(S.sel.type==='pan')S.pans=S.pans.filter(p=>p!==it);else S.obstacles=S.obstacles.filter(o=>o!==it);S.sel=null;changed();renderEditor();}
@@ -894,10 +1380,10 @@ $('mSrc').addEventListener('change',()=>{S.mod.src=$('mSrc').value;changed();ren
 
 /* ---------- puissance imposée ---------- */
 function panSpec(p){if(p.pts.length<3)return 0;const {tilt,gam}=panAngles(p);return specMonthly(tilt,gam).mon.reduce((a,b)=>a+b,0);}
-async function placeForced(){if(!S.mpp){toast('Définissez d\'abord l\'échelle.');return;}
-  if(usePvgis()){const ps=S.pans.filter(p=>p.pts.length>=3).map(p=>{const a=panAngles(p);return pvFetch(a.tilt,a.gam);});if(ps.length){toast('Interrogation de PVGIS…');await Promise.all(ps);}}
+async function placeForced(auto){if(!S.mpp){if(!auto)toast('Définissez d\'abord l\'échelle.');return;}
+  if(usePvgis()){const ps=S.pans.filter(p=>p.pts.length>=3).map(p=>{const a=panAngles(p);return pvFetch(a.tilt,a.gam);});if(ps.length){if(!auto)toast('Interrogation de PVGIS…');await Promise.all(ps);}}
   const target=parseFloat(String($('fTarget').value).replace(',','.'));if(!(target>0)){toast('Saisissez une puissance en kWc.');return;}
-  snapshot();S.forced.target=target;S.pans.forEach(p=>p.on=[]);
+  if(!auto)snapshot();S.forced.target=target;S.pans.forEach(p=>p.on=[]);
   /* pose choisie automatiquement : sur chaque pan incliné, l'orientation des modules qui en loge le plus */
   S.pans.forEach(p=>{if(p.pts.length>=3&&!isFlat(p))p.pose='auto';});
   recalc();
@@ -911,9 +1397,9 @@ async function placeForced(){if(!S.mpp){toast('Définissez d\'abord l\'échelle.
     const first=rows[order[0].toFixed(2)];const cu=first.reduce((a,x)=>a+x.u,0)/first.length;let need=k;
     order.forEach(r=>{if(need<=0)return;const row=rows[r.toFixed(2)].slice().sort((a,b)=>Math.abs(a.u-cu)-Math.abs(b.u-cu));row.slice(0,need).forEach(pn=>p.on.push(pn.key));need-=Math.min(need,row.length);});
     used.push([p.name,k]);});
-  S.forced.placed=true;S.forced.last={N,placed:N-left,used};changed();renderForced();setHint();
-  if(left>0)toast(`Toiture insuffisante : ${N-left} modules posés sur ${N} demandés`);else toast(`${N} modules posés`);}
-function renderForced(){const f=S.forced;$('fOn').checked=!!f.on;$('fBox').hidden=!f.on;$('fTarget').value=f.target??6;if(!f.on){$('fInfo').innerHTML='';return;}
+  S.forced.placed=true;S.forced.last={N,placed:N-left,used};S.forced.sig=geoSig();changed();renderForced();setHint();
+  if(left>0)toast(`Toiture insuffisante : ${N-left} modules posés sur ${N} demandés`);else if(!auto)toast(`${N} modules posés`);}
+function renderForced(){const f=S.forced;document.querySelectorAll('#fSeg .tb').forEach(b=>b.classList.toggle('on',+b.dataset.v===f.target));$('fOn').checked=!!f.on;$('fBox').hidden=!f.on;$('fTarget').value=f.target??6;if(!f.on){$('fInfo').innerHTML='';return;}
   const wp=S.mod.wp,t=parseFloat(String($('fTarget').value).replace(',','.'))||0,N=Math.floor(t*1000/wp+1e-9);
   let cap=0;S.pans.forEach(p=>{const L=S.layouts[p.id];if(L)cap+=L.panels.length;});
   const ranked=S.pans.filter(p=>p.pts.length>=3).map(p=>({p,spec:panSpec(p)})).sort((a,b)=>b.spec-a.spec);
@@ -923,9 +1409,25 @@ function renderForced(){const f=S.forced;$('fOn').checked=!!f.on;$('fBox').hidde
   else h+='<br><span class="warn">Aucun panneau posé pour l\'instant.</span>';
   $('fInfo').innerHTML=h;}
 $('fOn').addEventListener('change',()=>{snapshot();S.forced.on=$('fOn').checked;S.forced.placed=false;S.pans.forEach(p=>p.on=[]);changed();renderForced();setHint();});
-$('fTarget').addEventListener('input',()=>{const v=parseFloat(String($('fTarget').value).replace(',','.'));if(v>0)S.forced.target=v;renderForced();save();});
-$('fTarget').addEventListener('keydown',e=>{if(e.key==='Enter')placeForced();});
-$('fPlace').addEventListener('click',placeForced);
+$('fPlace').addEventListener('click',()=>placeForced(false));
+/* ---------- liaison avec la simulation ---------- */
+function setTarget(v){if(![3,6,9].includes(v))return;S.forced.target=v;S.forced.on=true;$('fTarget').value=v;renderForced();save();if(S.mpp&&S.pans.length)placeForced(true);else emitCalep();}
+$('fSeg').addEventListener('click',e=>{const b=e.target.closest('.tb');if(b)setTarget(+b.dataset.v);});
+window.addEventListener('frh:power',e=>{const v=e.detail&&e.detail.kwc;if(v&&v!==S.forced.target)setTarget(v);});
+/* empreinte de la toiture : si elle change en mode puissance imposée, les panneaux sont reposés automatiquement */
+function geoSig(){return JSON.stringify([S.mpp,S.forced.target,S.mod.w,S.mod.h,S.mod.wp,S.mod.margin,S.mod.gap,S.pans.map(p=>[p.pts,p.slope,p.eave,p.tilt,isFlat(p)]),S.obstacles.map(o=>o.pts)]);}
+let autoT=null,emitT=null;
+function autoPlace(){if(!S.forced.on||!S.mpp||!S.pans.length)return;if(S.forced.sig===geoSig())return;clearTimeout(autoT);autoT=setTimeout(()=>{if(S.forced.sig!==geoSig())placeForced(true);},450);}
+/* territoire déduit des coordonnées GPS du chantier */
+function terrFromGps(lat,lon){if(lat==null||lon==null)return null;
+  if(lat>14.3&&lat<15&&lon>-61.3&&lon<-60.7)return'Martinique';if(lat>15.8&&lat<16.6&&lon>-61.9&&lon<-60.9)return'Guadeloupe';
+  if(lat>2&&lat<6&&lon>-55&&lon<-51)return'Guyane';if(lat>-21.5&&lat<-20.8&&lon>55.1&&lon<56)return'Reunion';
+  if(lat>41.3&&lat<43.1&&lon>8.5&&lon<9.7)return'Corse';if(lat>41&&lat<51.5&&lon>-5.5&&lon<10)return'France Metropolitaine';return null;}
+function emitCalep(){clearTimeout(emitT);emitT=setTimeout(()=>{const t=totals();let year=0;if(S.mpp)S.pans.forEach(p=>{year+=panProd(p).year;});
+  const lat=S.mod.gpsLat??(S.capture?S.capture.lat:null),lon=S.mod.gpsLon??(S.capture?S.capture.lon:null);
+  const d={kwc:t.kwc,n:t.n,yield:t.kwc>0?year/t.kwc:null,year,terr:S.isExample?null:terrFromGps(lat,lon),lat,lon,src:usePvgis()?'PVGIS':'calcul interne',
+    target:S.forced.target,forcedOn:!!S.forced.on,hasRoof:!!(S.mpp&&S.pans.length&&t.n>0),isExample:!!S.isExample};
+  window.FRH_CALEP=d;window.dispatchEvent(new CustomEvent('frh:calep',{detail:d}));},120);}
 function totals(){let n=0;S.pans.forEach(p=>n+=activeCount(p));return{n,kwc:n*S.mod.wp/1000,area:n*S.mod.w*S.mod.h/1e6};}
 function renderSummary(){if(!S.mpp){['tN','tKwc','tArea','tProd'].forEach(i=>$(i).textContent='–');$('prodWrap').hidden=true;return;}
   const t=totals();$('tN').textContent=t.n;$('tKwc').textContent=nf(t.kwc,2)+' kWc';$('tArea').textContent=nf(t.area,1)+' m²';
@@ -1203,11 +1705,436 @@ new ResizeObserver(()=>document.documentElement.style.setProperty('--hdr',docume
 function restore(){let saved=null;try{saved=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
   if(!saved||(!saved.img&&!saved.isExample)){loadExample();return;}
   const apply=()=>{hist.length=0;S.pans=saved.pans||[];if(!saved.poseAuto)S.pans.forEach(p=>{p.pose='auto';p.off=[];});S.obstacles=saved.obstacles||[];S.calib=saved.calib||null;S.mpp=saved.mpp||null;
-    if(saved.mod&&(saved.modV2||saved.mod.preset==='custom')){Object.assign(S.mod,saved.mod);if(!saved.modV3&&S.mod.preset==='p2000'&&S.mod.wp===450)S.mod.wp=500;}else if(saved.mod){S.mod.margin=saved.mod.margin;S.mod.gap=saved.mod.gap;}if(saved.forced)S.forced=saved.forced;if(saved.capture)S.capture=saved.capture;if(saved.roofMode){S.roofMode=saved.roofMode;$('roofMode').value=saved.roofMode;}S.seq=saved.seq||50;S.colorIdx=saved.colorIdx||S.pans.length;renderModule();renderForced();fit();setMode('select');renderCalib();renderEditor();changed();autoCollapse();};
+    if(saved.mod&&(saved.modV2||saved.mod.preset==='custom')){Object.assign(S.mod,saved.mod);if(!saved.modV3&&S.mod.preset==='p2000'&&S.mod.wp===450)S.mod.wp=500;}else if(saved.mod){S.mod.margin=saved.mod.margin;S.mod.gap=saved.mod.gap;}if(saved.forced)S.forced=saved.forced;if(!saved.forcedV2){S.forced.on=true;S.forced.placed=false;}if(![3,6,9].includes(S.forced.target))S.forced.target=6;if(saved.capture)S.capture=saved.capture;if(saved.roofMode){S.roofMode=saved.roofMode;$('roofMode').value=saved.roofMode;}S.seq=saved.seq||50;S.colorIdx=saved.colorIdx||S.pans.length;renderModule();renderForced();fit();setMode('select');renderCalib();renderEditor();changed();autoCollapse();};
   if(saved.img)setImage(saved.img,false,apply);else setImage(makeExample(),true,apply);}
 renderModule();renderCalib();renderList();setHint();restore();pvCheck();
 {let u={};try{u=JSON.parse(localStorage.getItem('frh-ui')||'{}');}catch(e){}setCollapsed(4,u.c4!==false);setCollapsed(5,u.c5!==false);}
 })();
 </script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const nf=(n,d=0)=>Number(n).toLocaleString('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const eur=(n,d=0)=>nf(n,d)+' €';
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const num=(id,def)=>{const v=parseFloat(String($(id).value).replace(',','.'));return isNaN(v)?def:v;};
+function toast(m){const t=$('sToast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2600);}
+
+/* ---------- tarifs par défaut (repris du fichier fourni ; mis à jour par tarifs.json) ---------- */
+const BAND_LABELS=['0 à 3 kWc','4 à 9 kWc','10 à 36 kWc','37 à 100 kWc','101 à 500 kWc'];
+const DUREES=[60,96,120,144,180];
+const CONFIGS=[{id:'3_nobat',kwc:3,batt:0,label:'3 kWc sans batterie'},{id:'6_nobat',kwc:6,batt:0,label:'6 kWc sans batterie'},{id:'9_nobat',kwc:9,batt:0,label:'9 kWc sans batterie'},
+  {id:'3_bat',kwc:3,batt:8,label:'3 kWc avec batterie'},{id:'6_bat',kwc:6,batt:8,label:'6 kWc avec batterie'},{id:'9_bat',kwc:9,batt:8,label:'9 kWc avec batterie'}];
+const DEFAULT_INST={
+  '3_nobat':{prix:11900,remise:1000,mens:{60:245.98,96:172.56,120:148.47,144:132.65,180:117.21},mensRS:{60:225.31,96:158.06,120:135.99,144:121.50,180:107.35}},
+  '6_nobat':{prix:16900,remise:1000,mens:{60:349.33,96:245.06,120:210.84,144:188.39,180:166.45},mensRS:{60:328.67,96:230.57,120:198.37,144:177.25,180:156.61}},
+  '9_nobat':{prix:19900,remise:1000,mens:{60:411.35,96:288.56,120:248.27,144:221.83,180:196.00},mensRS:{60:390.68,96:274.07,120:235.80,144:210.69,180:186.15}},
+  '3_bat':{prix:13900,remise:2000,mens:{60:287.32,96:201.56,120:160.68,144:154.95,180:136.90},mensRS:{60:245.98,96:172.56,120:148.47,144:132.65,180:117.21}},
+  '6_bat':{prix:19900,remise:2000,mens:{60:411.35,96:288.56,120:248.27,144:221.83,180:196.00},mensRS:{60:370.01,96:259.56,120:223.32,144:199.54,180:176.30}},
+  '9_bat':{prix:23900,remise:2000,mens:{60:494.03,96:346.57,120:298.18,144:266.42,180:235.40},mensRS:{60:452.69,96:317.57,120:273.23,144:244.13,180:215.70}}};
+const DEFAULT_TARIFS={maj:'2026-10-01',installations:DEFAULT_INST,territoires:{
+  'France Metropolitaine':{prime_annee:1,productible:1150,tarif_rachat:[{min:0,max:3,tarif:0.04},{min:4,max:9,tarif:0.04},{min:10,max:36,tarif:0.0473},{min:37,max:100,tarif:0.0473},{min:101,max:500,tarif:0}],primes:[{min:0,max:3,montant_euros_par_wc:0.08},{min:4,max:9,montant_euros_par_wc:0.08},{min:10,max:36,montant_euros_par_wc:0.12},{min:37,max:100,montant_euros_par_wc:0.06},{min:101,max:500,montant_euros_par_wc:0}]},
+  'Corse':{prime_annee:2,productible:1400,tarif_rachat:[{min:0,max:3,tarif:0.1661},{min:4,max:9,tarif:0.1661},{min:10,max:36,tarif:0.0902},{min:37,max:100,tarif:0.0902},{min:101,max:500,tarif:0.1390}],primes:[{min:0,max:3,montant_euros_par_wc:1.15},{min:4,max:9,montant_euros_par_wc:0.65},{min:10,max:36,montant_euros_par_wc:0.33},{min:37,max:100,montant_euros_par_wc:0.44},{min:101,max:500,montant_euros_par_wc:0}]},
+  'Reunion':{prime_annee:2,productible:1450,tarif_rachat:[{min:0,max:3,tarif:0.1756},{min:4,max:9,tarif:0.1756},{min:10,max:36,tarif:0.0902},{min:37,max:100,tarif:0.0902},{min:101,max:500,tarif:0.1596}],primes:[{min:0,max:3,montant_euros_par_wc:1.55},{min:4,max:9,montant_euros_par_wc:0.93},{min:10,max:36,montant_euros_par_wc:0.54},{min:37,max:100,montant_euros_par_wc:0.38},{min:101,max:500,montant_euros_par_wc:0}]},
+  'Guyane':{prime_annee:2,productible:1400,tarif_rachat:[{min:0,max:3,tarif:0.1804},{min:4,max:9,tarif:0.1804},{min:10,max:36,tarif:0.0712},{min:37,max:100,tarif:0.0712},{min:101,max:500,tarif:0.1408}],primes:[{min:0,max:3,montant_euros_par_wc:1.69},{min:4,max:9,montant_euros_par_wc:1.02},{min:10,max:36,montant_euros_par_wc:0.77},{min:37,max:100,montant_euros_par_wc:0.52},{min:101,max:500,montant_euros_par_wc:0}]},
+  'Martinique':{prime_annee:2,productible:1550,tarif_rachat:[{min:0,max:3,tarif:0.1804},{min:4,max:9,tarif:0.1804},{min:10,max:36,tarif:0.0712},{min:37,max:100,tarif:0.0712},{min:101,max:500,tarif:0.1586}],primes:[{min:0,max:3,montant_euros_par_wc:1.72},{min:4,max:9,montant_euros_par_wc:1.04},{min:10,max:36,montant_euros_par_wc:0.78},{min:37,max:100,montant_euros_par_wc:0.53},{min:101,max:500,montant_euros_par_wc:0}]},
+  'Guadeloupe':{prime_annee:2,productible:1550,tarif_rachat:[{min:0,max:3,tarif:0.1804},{min:4,max:9,tarif:0.1804},{min:10,max:36,tarif:0.0712},{min:37,max:100,tarif:0.0712},{min:101,max:500,tarif:0.1586}],primes:[{min:0,max:3,montant_euros_par_wc:1.79},{min:4,max:9,montant_euros_par_wc:1.09},{min:10,max:36,montant_euros_par_wc:0.82},{min:37,max:100,montant_euros_par_wc:0.56},{min:101,max:500,montant_euros_par_wc:0}]}}};
+const TERR_NAMES={'France Metropolitaine':'France métropolitaine','Corse':'Corse','Reunion':'La Réunion','Guyane':'Guyane','Martinique':'Martinique','Guadeloupe':'Guadeloupe'};
+const tName=k=>TERR_NAMES[k]||k;
+const TKEY='frh-tarifs-local',SKEY='frh-simu-v1';
+let PUBLISHED=JSON.parse(JSON.stringify(DEFAULT_TARIFS)),TARIFS=PUBLISHED,tarSource='intégrés à l\'outil',localOverride=false;
+
+/* accepte aussi l'ancien format (territoires à la racine) */
+function normInst(src){const out={};CONFIGS.forEach(c=>{const d=DEFAULT_INST[c.id],x=(src&&src[c.id])||{};const m={},mr={};
+    DUREES.forEach(n=>{m[n]=+((x.mens||{})[n]??d.mens[n]);mr[n]=+((x.mensRS||{})[n]??d.mensRS[n]);});out[c.id]={prix:+(x.prix??d.prix),remise:+(x.remise??d.remise),mens:m,mensRS:mr};});return out;}
+function normalize(d){if(!d||typeof d!=='object')return null;const terr=d.territoires||d;const out={maj:d.maj||'',installations:normInst(d.installations),territoires:{}};
+  Object.keys(terr).forEach(k=>{if(k==='installations'||k==='maj')return;const t=terr[k];if(!t||!Array.isArray(t.tarif_rachat)||!Array.isArray(t.primes))return;const def=DEFAULT_TARIFS.territoires[k]||{};
+    out.territoires[k]={prime_annee:t.prime_annee??def.prime_annee??2,productible:t.productible??def.productible??1400,tarif_rachat:t.tarif_rachat.map(x=>({min:+x.min,max:+x.max,tarif:+x.tarif})),primes:t.primes.map(x=>({min:+x.min,max:+x.max,montant_euros_par_wc:+x.montant_euros_par_wc}))};});
+  return Object.keys(out.territoires).length?out:null;}
+function bandIndex(list,p){for(let i=0;i<list.length;i++)if(p<=list[i].max)return i;return list.length-1;}
+
+/* ---------- appareils de nuit ---------- */
+const EQ=[{id:'frigo',n:'Réfrigérateur',w:60,q:1,h:12,on:true},{id:'congel',n:'Congélateur',w:70,q:1,h:12,on:false},{id:'tv',n:'Télévision',w:100,q:1,h:3,on:true},
+  {id:'box',n:'Box internet',w:15,q:1,h:12,on:true},{id:'ventilo',n:'Ventilateur',w:55,q:1,h:8,on:false},{id:'clim',n:'Climatisation inverter',w:900,q:1,h:8,on:false},
+  {id:'led',n:'Éclairage LED',w:60,q:1,h:5,on:true},{id:'pompe',n:'Pompe / surpresseur',w:400,q:1,h:0.5,on:false},{id:'ve',n:'Voiture électrique (recharge)',w:3700,q:1,h:2,on:false,noBackup:true}];
+
+/* ---------- état ---------- */
+const DEF={terr:'Martinique',bill:120,price:0.20,share:0.4,power:6,yield:null,batt:8,cost:18000,rs:false,birth:'',instDate:'',infl:2,deg:0.5,use:90,eff:95,eq:EQ.map(e=>({id:e.id,on:e.on,q:e.q,h:e.h}))};
+let S=JSON.parse(JSON.stringify(DEF));
+try{const s=JSON.parse(localStorage.getItem(SKEY)||'null');if(s){if(!s.v2){s.infl=2;s.v2=true;}S=Object.assign(S,s);}}catch(e){}
+S.v2=true;
+let saveT=null;const save=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(SKEY,JSON.stringify(S));}catch(e){}},300);};
+
+/* ---------- calcul ---------- */
+function stdConfig(){return CONFIGS.find(c=>c.kwc===Math.round(S.power)&&c.batt===S.batt)||null;}
+/* ---------- liaison avec le calepinage (même page) ---------- */
+let CAL=window.FRH_CALEP||null;
+function syncCal(){if(![3,6,9].includes(S.power))S.power=6;if(!CAL)return;if(CAL.forcedOn&&[3,6,9].includes(CAL.target))S.power=CAL.target;
+  if(S.useCal===false)return;if(CAL.terr&&TARIFS.territoires[CAL.terr])S.terr=CAL.terr;if(CAL.hasRoof&&CAL.yield>0)S.yield=Math.round(CAL.yield);}
+function calUsed(){return !!(CAL&&S.useCal!==false&&CAL.hasRoof&&CAL.yield>0);}
+function renderCal(){const b=$('calBand');if(!CAL||(!CAL.hasRoof&&!CAL.terr)){b.hidden=true;$('iYield').readOnly=false;$('iTerr').disabled=false;return;}b.hidden=false;
+  const P=S.power,short=CAL.hasRoof&&CAL.kwc<P-0.01;
+  $('calTxt').innerHTML=`<b>Toiture</b> : ${CAL.hasRoof?`${CAL.n} modules = ${nf(CAL.kwc,2)} kWc posés · productible <b>${nf(CAL.yield)} kWh/kWc</b> (${CAL.src})`:'aucun panneau posé'}${CAL.terr?` · ${esc(tName(CAL.terr))} (GPS)`:''}`
+    +(short?`<br><span class="warnline">La toiture ne permet de poser que ${nf(CAL.kwc,2)} kWc sur les ${P} kWc choisis.</span>`:'');
+  $('iUseCal').checked=S.useCal!==false;const on=S.useCal!==false;$('iYield').readOnly=on&&CAL.hasRoof&&CAL.yield>0;$('iTerr').disabled=on&&!!CAL.terr;}
+window.addEventListener('frh:calep',e=>{CAL=e.detail;render();if(!$('viewFin').hidden)renderFin();});
+$('iUseCal').addEventListener('change',()=>{S.useCal=$('iUseCal').checked;if(!S.useCal)S.yield=null;render();});
+$('goRoof').addEventListener('click',()=>{const t=document.getElementById('tab2d');if(t)t.click();});
+window.FRH_simHide=()=>{if(typeof dayStop==='function')dayStop();};
+function compute(){syncCal();
+  const T=TARIFS.territoires[S.terr]||Object.values(TARIFS.territoires)[0];
+  const cfg=stdConfig(),inst=cfg?(TARIFS.installations||DEFAULT_INST)[cfg.id]:null,cost=inst?(S.rs?inst.prix-inst.remise:inst.prix):S.cost;
+  const P=Math.max(1,Math.round(S.power)),price=Math.max(0.01,S.price),yld=S.yield??T.productible;
+  const bi=bandIndex(T.tarif_rachat,P),pi=bandIndex(T.primes,P);
+  const tarif=T.tarif_rachat[bi].tarif,primeWc=T.primes[pi].montant_euros_par_wc,prime=P*1000*primeWc,primeYear=T.prime_annee||2;
+  // consommation : facture (abonnement inclus) ÷ prix du kWh, répartie selon le profil
+  const monthKwh=S.bill/price,dayLoadTot=monthKwh*12/365,nightProfile=dayLoadTot*(1-S.share);
+  // appareils de nuit : détail de la nuit + autonomie en coupure
+  let eqNight=0,eqW=0,evNight=0;S.eq.forEach(e=>{const d=EQ.find(x=>x.id===e.id);if(!d||!e.on)return;const k=d.w*e.q*e.h/1000;eqNight+=k;if(d.noBackup)evNight+=k;else eqW+=d.w*e.q;});
+  /* si les appareils cochés consomment plus que la part de nuit du profil, la nuit est portée à leur consommation et la journée réduite d'autant */
+  const nightLoad=Math.min(dayLoadTot,Math.max(nightProfile,eqNight)),dayLoad=dayLoadTot-nightLoad;
+  const shiftNight=nightLoad>nightProfile+1e-6,overTotal=eqNight>dayLoadTot+1e-6,effShare=dayLoadTot?dayLoad/dayLoadTot:0;
+  // production et répartition (journée moyenne)
+  const pvDay=P*yld/365;
+  const direct=Math.min(dayLoad,pvDay),after=pvDay-direct;
+  const nom=S.batt,useful=nom*S.use/100,eta=S.eff/100;
+  const battIn=nom>0?Math.min(after,useful/eta,nightLoad/(eta*eta)):0; // on ne charge que ce dont la nuit a besoin
+  const battOut=battIn*eta*eta;
+  const surplus=after-battIn;
+  const gridDay=dayLoad-direct,gridNight=nightLoad-battOut,grid=gridDay+gridNight;
+  const selfUse=direct+battOut;
+  // finances
+  const saveYr1=selfUse*365*price,sellYr1=surplus*365*tarif;
+  const newBill=grid*365/12*price;
+  const flows=[];let cum=-cost,payback=null;flows.push({y:0,cum});
+  const inf=1+S.infl/100,dg=1-S.deg/100;let gain20=null;
+  for(let y=1;y<=20;y++){const f=Math.pow(dg,y-1);const sv=saveYr1*f*Math.pow(inf,y-1);const sl=y<=20?sellYr1*f:0;const pr=y===primeYear?prime:0;
+    const prev=cum;cum+=sv+sl+pr;if(payback===null&&prev<0&&cum>=0)payback=(y-1)+(-prev)/(cum-prev);flows.push({y,cum,sv,sl,pr});if(y===20)gain20=cum;}
+  /* retour sur investissement = coût net après prime ÷ (moyenne mensuelle économies + revente sur 20 ans × 12) */
+  const avgMonth=flows.reduce((a,f)=>a+(f.sv||0)+(f.sl||0),0)/240;
+  payback=avgMonth>0?Math.max(0,(cost-prime)/(avgMonth*12)):null;
+  return{cost,cfg,inst,avgMonth,T,P,price,yld,bi,tarif,primeWc,prime,primeYear,monthKwh,dayLoadTot,dayLoad,nightLoad,nightProfile,shiftNight,overTotal,effShare,evNight,eqNight,eqW,pvDay,direct,battIn,battOut,surplus,grid,selfUse,
+    useful,eta,saveYr1,sellYr1,newBill,flows,payback,gain20,nom};}
+
+/* ---------- affichage ---------- */
+function render(){const R=compute();renderInputs(R);renderCal();
+  const saveMonth=(S.bill-R.newBill);
+  const sellMonth=R.sellYr1/12,sav20=R.flows.reduce((a,f)=>a+(f.sv||0),0),sell20=R.flows.reduce((a,f)=>a+(f.sl||0),0);
+  $('kTot').textContent=eur(saveMonth+sellMonth);$('kTotS').textContent=`soit ${eur((saveMonth+sellMonth)*12)} la 1ʳᵉ année`;
+  $('kSave').textContent=eur(saveMonth);$('kSaveS').textContent=`puis +${nf(S.infl,1)} % par an`;
+  $('kSell').textContent=eur(sellMonth);$('kSellS').textContent=`${nf(R.surplus*365/12)} kWh à ${nf(R.tarif,4)} €`;
+  $('kBill').innerHTML=eur(R.newBill)+'<small class="plus"> + abonnement</small>';$('kBillS').textContent=`au lieu de ${eur(S.bill)} par mois`;
+  $('kAvg').textContent=eur((sav20+sell20)/240);$('kAvgS').textContent=`${eur(sav20/240)} d'économies + ${eur(sell20/240)} de revente en moyenne, hausse de ${nf(S.infl,1)} %/an incluse`;
+  $('kGain').textContent=eur(sav20+sell20);$('kGain').style.color='var(--ok)';$('kGainS').textContent=`${eur(sav20)} d'économies + ${eur(sell20)} de revente, hors prime et hors coût de l'installation`;
+  $('kRoi').textContent=R.payback===null?'—':nf(R.payback,1)+' ans';$('kRoiS').textContent=`${eur(R.cost-R.prime)} (coût net après prime) ÷ ${eur(R.avgMonth*12)} par an (moyenne économies + revente sur 20 ans)`;
+  $('mProd').textContent=nf(R.pvDay*365)+' kWh/an';
+  $('mAuto').textContent=nf(R.dayLoadTot?R.selfUse/R.dayLoadTot*100:0)+' %';
+  $('mSell').textContent=eur(R.cost-R.prime);
+  $('mPrime').textContent=eur(R.prime);
+  $('cashSub').textContent=`sur 20 ans · élec. +${nf(S.infl,1)} %/an`;$('primeYearTxt').textContent=R.primeYear===1?'1ʳᵉ':R.primeYear+'ᵉ';
+  // barres
+  const L=R.dayLoadTot||1,pv=R.pvDay||1;
+  $('bDirect').style.width=(R.direct/L*100)+'%';$('bBatt').style.width=(R.battOut/L*100)+'%';$('bGrid').style.width=(R.grid/L*100)+'%';
+  $('lDirect').textContent=nf(R.direct/L*100)+' %';$('lBatt').textContent=nf(R.battOut/L*100)+' %';$('lGrid').textContent=nf(R.grid/L*100)+' %';
+  $('pDirect').style.width=(R.direct/pv*100)+'%';$('pBatt').style.width=(R.battIn/pv*100)+'%';$('pSell').style.width=(R.surplus/pv*100)+'%';
+  $('qDirect').textContent=nf(R.direct/pv*100)+' %';$('qBatt').textContent=nf(R.battIn/pv*100)+' %';$('qSell').textContent=nf(R.surplus/pv*100)+' %';
+  $('lBattWrap').hidden=$('qBattWrap').hidden=!R.nom;$('bBatt').hidden=$('pBatt').hidden=!R.nom;
+  // batterie
+  $('backupCard').hidden=!R.nom;
+  if(R.nom){const full=R.useful*R.eta;$('bkHours').textContent=R.eqW>0?nf(full/(R.eqW/1000),1)+' h':'—';
+    $('bkNight').textContent=nf(R.nightLoad?R.battOut/R.nightLoad*100:0)+' %';$('bkStored').textContent=nf(R.battIn*R.eta,1)+' kWh';$('bkUseful').textContent=nf(R.useful,1)+' kWh';}
+  // bilan financier
+  const fr=[[R.inst?(S.rs?'Prix de l\'installation (avec RS)':'Prix de l\'installation (standard)'):'Prix de l\'installation',-R.cost],[`Prime (${nf(R.primeWc,2)} €/Wc, versée l'année ${R.primeYear})`,R.prime],['Coût net après prime',R.prime-R.cost,'sum'],
+    ['Économie sur la facture (1ʳᵉ année)',R.saveYr1],[`Économies cumulées sur 20 ans (+${nf(S.infl,1)} %/an)`,R.flows.reduce((a,f)=>a+(f.sv||0),0)],[`Revente du surplus (${nf(R.tarif,4)} €/kWh)`,R.sellYr1],['Gain annuel (1ʳᵉ année)',R.saveYr1+R.sellYr1,'sum'],
+    ['Gain net sur 20 ans',R.gain20,'sum']];
+  $('finRows').innerHTML=fr.map(([k,v,c])=>`<tr${c?' class="sumrow"':''}><td>${esc(k)}</td><td class="${v<0?'neg':''}">${v<0?'− ':''}${eur(Math.abs(v))}</td></tr>`).join('');
+  const er=[['Production solaire',R.pvDay],['Consommation du foyer',R.dayLoadTot],['dont en journée',R.dayLoad],['dont la nuit',R.nightLoad],['Solaire consommé en direct',R.direct]]
+    .concat(R.nom?[['Stocké dans la batterie',R.battIn],['Rendu par la batterie la nuit',R.battOut]]:[]).concat([['Surplus revendu',R.surplus],['Encore acheté au réseau',R.grid,'sum']]);
+  $('enRows').innerHTML=er.map(([k,v,c])=>`<tr${c?' class="sumrow"':''}><td>${esc(k)}</td><td>${nf(v,1)}</td><td>${nf(v*365/12)}</td><td>${nf(v*365)}</td></tr>`).join('');
+  renderChart(R);renderStory(R,saveMonth);save();}
+
+function renderInputs(R){
+  $('consoInfo').innerHTML=`Soit <b>${nf(R.monthKwh)} kWh/mois</b> (${nf(R.dayLoadTot,1)} kWh/jour), abonnement inclus.`;
+  document.querySelectorAll('#iShare button').forEach(b=>b.classList.toggle('on',+b.dataset.v===S.share));
+  $('shareHint').innerHTML=`${nf(R.dayLoad,1)} kWh le jour · ${nf(R.nightLoad,1)} kWh la nuit`+(R.shiftNight?` <span class="pill">ajusté à ${nf(R.effShare*100)} % le jour</span>`:'');
+  document.querySelectorAll('#iBatt button').forEach(b=>b.classList.toggle('on',+b.dataset.v===S.batt));
+  document.querySelectorAll('#pQuick button').forEach(b=>b.classList.toggle('on',+b.dataset.v===R.P));
+  if(document.activeElement!==$('iYield'))$('iYield').value=R.yld;
+  $('stdPriceBox').hidden=!R.inst;$('manPriceBox').hidden=!!R.inst;$('iRS').checked=!!S.rs;
+  if(R.inst){$('stdPrice').textContent=eur(R.cost);$('priceInfo').textContent=S.rs?`Prix avec remise spéciale (−${eur(R.inst.remise)} sur ${eur(R.inst.prix)}).`:'Prix standard FRH, avant déduction de la prime.';}
+  else $('priceInfo').textContent=`Pas de prix standard pour ${R.P} kWc ${S.batt?'avec':'sans'} batterie : saisissez le prix. Le financement n'est proposé que pour 3, 6 et 9 kWc.`;
+  $('bandInfo').innerHTML=`Tranche ${BAND_LABELS[R.bi]} · rachat ${nf(R.tarif,4)} €/kWh · prime ${nf(R.primeWc,2)} €/Wc = <b>${eur(R.prime)}</b>`;
+  // appareils
+  const other=Math.max(0,R.nightLoad-R.eqNight);
+  $('eqInfo').innerHTML=R.overTotal?`<span class="warnline">Les appareils cochés (${nf(R.eqNight,1)} kWh/nuit) dépassent toute la consommation de la facture (${nf(R.dayLoadTot,1)} kWh/jour) : vérifiez la facture, les quantités ou les heures.</span>`
+    :R.shiftNight?`Les appareils cochés consomment <b>${nf(R.eqNight,1)} kWh la nuit</b>, plus que la part de nuit du profil (${nf(R.nightProfile,1)} kWh). La nuit est donc portée à ${nf(R.nightLoad,1)} kWh et la journée réduite d'autant (${nf(R.effShare*100)} % le jour au lieu de ${nf(S.share*100)} %), à consommation totale égale.`
+    :`Nuit : ${nf(R.nightLoad,1)} kWh, dont <b>${nf(R.eqNight,1)} kWh</b> pour les appareils cochés et ${nf(other,1)} kWh d'autres usages.`;
+  $('eqInfo').innerHTML+=R.evNight>0?` La recharge de la voiture (${nf(R.evNight,1)} kWh) est comptée la nuit mais pas dans l'autonomie en coupure.`:'';
+  // résumés des blocs repliés
+  $('sClient').innerHTML=`${esc(tName(S.terr))} · <b>${eur(S.bill)}/mois</b> · ${nf(S.price,2)} €/kWh (+${nf(S.infl,1)} %/an) · ${nf(S.share*100)} % le jour`;
+  $('sInst').innerHTML=`<b>${R.P} kWc</b> · ${S.batt?'batterie 8 kWh':'sans batterie'} · ${eur(R.cost)}`;
+  $('sEq').innerHTML=`${S.eq.filter(e=>e.on).length} appareils · ${nf(R.eqNight,1)} kWh/nuit · ${nf(R.eqW)} W`;
+  $('sHyp').innerHTML=`vieillissement ${nf(S.deg,1)} %/an · batterie ${nf(S.use)} % utile`;
+  $('tarDate').textContent=`${tName(S.terr)}, mise à jour du ${fmtDate(TARIFS.maj)}`;}
+function fmtDate(d){if(!d)return'—';const p=String(d).split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d;}
+
+function niceStep(r){const raw=r/5,p=Math.pow(10,Math.floor(Math.log10(raw||1)));const q=raw/p;return(q<=1?1:q<=2?2:q<=5?5:10)*p;}
+function renderChart(R){const W=560,H=250,L=58,Rr=24,T=14,B=28;const F=R.flows;
+  let mn=Math.min(0,...F.map(f=>f.cum)),mx=Math.max(0,...F.map(f=>f.cum));const st=niceStep(mx-mn||1);mn=Math.floor(mn/st)*st;mx=Math.ceil(mx/st)*st;
+  const x=y=>L+y/20*(W-L-Rr),yv=v=>T+(1-(v-mn)/(mx-mn))*(H-T-B);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Trésorerie cumulée sur 20 ans">`;
+  for(let v=mn;v<=mx+1e-6;v+=st)s+=`<line class="gl" x1="${L}" x2="${W-Rr}" y1="${yv(v)}" y2="${yv(v)}"/><text class="ax" x="${L-6}" y="${yv(v)+3.5}" text-anchor="end">${nf(v/1000)} k€</text>`;
+  s+=`<line class="zero" x1="${L}" x2="${W-Rr}" y1="${yv(0)}" y2="${yv(0)}"/>`;
+  [0,5,10,15,20].forEach(y=>s+=`<text class="ax" x="${x(y)}" y="${H-9}" text-anchor="middle">${y===0?'Achat':'An '+y}</text>`);
+  const pts=F.map(f=>`${x(f.y)},${yv(f.cum)}`);
+  s+=`<path class="area" d="M${x(0)},${yv(0)} L${pts.join(' L')} L${x(20)},${yv(0)} Z"/><polyline class="line" points="${pts.join(' ')}"/>`;
+  if(R.payback!==null&&R.payback<=20){const px=x(R.payback);const right=px>W-150;s+=`<line class="pb" x1="${px}" x2="${px}" y1="${T}" y2="${H-B}"/><circle cx="${px}" cy="${yv(0)}" r="5" fill="var(--ok)"/><text class="pbt" x="${px+(right?-8:8)}" y="${T+12}" text-anchor="${right?'end':'start'}">Retour sur investissement : ${nf(R.payback,1)} ans</text>`;}
+  s+=`<line class="cur" id="cCur" x1="0" x2="0" y1="${T}" y2="${H-B}" visibility="hidden"/>`;
+  F.forEach(f=>s+=`<rect class="hit" data-y="${f.y}" x="${x(f.y)-(W-L-Rr)/40}" y="${T}" width="${(W-L-Rr)/20}" height="${H-T-B}"/>`);
+  $('cashChart').innerHTML=s+'</svg>';renderChart.d={R,W,x,yv};}
+$('cashChart').addEventListener('pointermove',e=>{const r=e.target.closest('.hit'),tip=$('cashTip'),cur=document.getElementById('cCur');if(!r||!renderChart.d){tip.hidden=true;if(cur)cur.setAttribute('visibility','hidden');return;}
+  const {R,W,x,yv}=renderChart.d;const f=R.flows[+r.dataset.y];const svg=$('cashChart').firstChild.getBoundingClientRect(),wr=$('cashChart').parentNode.getBoundingClientRect(),k=svg.width/W;
+  tip.innerHTML=f.y===0?`Achat : ${eur(f.cum)}`:`Année ${f.y} · cumul <b>${eur(f.cum)}</b><br>économie ${eur(f.sv)} · revente ${eur(f.sl)}${f.pr?` · prime ${eur(f.pr)}`:''}<br>prix du kWh : ${nf(S.price*Math.pow(1+S.infl/100,f.y-1),3)} €`;
+  tip.style.left=(svg.left-wr.left+x(f.y)*k)+'px';tip.style.top=(svg.top-wr.top+yv(f.cum)*k)+'px';tip.hidden=false;cur.setAttribute('x1',x(f.y));cur.setAttribute('x2',x(f.y));cur.setAttribute('visibility','visible');});
+$('cashChart').addEventListener('pointerleave',()=>{$('cashTip').hidden=true;const c=document.getElementById('cCur');if(c)c.setAttribute('visibility','hidden');});
+
+function renderStory(R,saveMonth){const t=`Avec une facture de <b>${eur(S.bill)} par mois</b>, une installation de <b>${R.P} kWc</b>${R.nom?' avec <b>batterie 8 kWh</b>':''} produirait environ <b>${nf(R.pvDay*365)} kWh par an</b>.
+  Votre foyer serait alimenté à <b>${nf(R.dayLoadTot?R.selfUse/R.dayLoadTot*100:0)} %</b> par le solaire${R.nom?', le jour en direct et la nuit grâce à la batterie':''}.
+  Votre facture passerait à environ <b>${eur(R.newBill)} par mois</b>, soit <b>${eur(saveMonth)} d'économie mensuelle</b> dès la première année${S.infl>0?`, une économie qui grandit avec la hausse du prix de l'électricité (hypothèse : <b>+${nf(S.infl,1)} % par an</b>)`:''}.
+  Le surplus revendu rapporterait <b>${eur(R.sellYr1/12)} par mois</b> (${eur(R.sellYr1)} par an) pendant 20 ans, soit au total <b>${eur(saveMonth+R.sellYr1/12)} par mois</b> d'économies et de revente, et vous recevriez une prime de <b>${eur(R.prime)}</b> la ${R.primeYear===1?'première':R.primeYear+'ᵉ'} année.
+  ${R.payback!==null?`Après déduction de la prime, l'installation (${eur(R.cost-R.prime)} net) serait remboursée en <b>${nf(R.payback,1)} ans</b>, pour un gain net de <b>${eur(R.gain20)}</b> sur 20 ans.`:`Avec ce prix, l'installation ne serait pas remboursée en 20 ans.`}
+  ${R.nom&&R.eqW>0?` En cas de coupure, la batterie pleine alimente les appareils essentiels pendant environ <b>${nf(R.useful*R.eta/(R.eqW/1000),1)} heures</b>.`:''}`;
+  $('story').innerHTML=t;renderStory.txt=t.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();}
+
+/* ---------- saisies ---------- */
+function fillTerr(sel){sel.innerHTML=Object.keys(TARIFS.territoires).map(k=>`<option value="${esc(k)}">${esc(tName(k))}</option>`).join('');}
+function loadInputs(){fillTerr($('iTerr'));if(!TARIFS.territoires[S.terr])S.terr=Object.keys(TARIFS.territoires)[0];
+  $('iTerr').value=S.terr;$('iBill').value=S.bill;$('iPrice').value=S.price;$('iPower').value=S.power;$('iCost').value=S.cost;
+  $('iInfl').value=S.infl;$('iDeg').value=S.deg;$('iUse').value=S.use;$('iEff').value=S.eff;
+  $('eqList').innerHTML=EQ.map(d=>{const e=S.eq.find(x=>x.id===d.id)||{on:d.on,q:d.q,h:d.h};return `<div class="eq"><input type="checkbox" id="eq_${d.id}" data-id="${d.id}" data-k="on"${e.on?' checked':''}>
+    <label class="nm" for="eq_${d.id}">${esc(d.n)}<span>${nf(d.w)} W</span></label>
+    <input type="number" min="1" max="10" step="1" value="${e.q}" data-id="${d.id}" data-k="q" aria-label="Quantité ${esc(d.n)}">
+    <input type="number" min="0" max="14" step="0.5" value="${e.h}" data-id="${d.id}" data-k="h" aria-label="Heures par nuit ${esc(d.n)}"></div>`;}).join('');}
+$('iTerr').addEventListener('change',()=>{S.terr=$('iTerr').value;S.yield=null;render();});
+[['iBill','bill',0],['iPrice','price',0.2],['iCost','cost',0],['iInfl','infl',0],['iDeg','deg',0.5],['iUse','use',90],['iEff','eff',95]].forEach(([id,k,d])=>$(id).addEventListener('input',()=>{S[k]=Math.max(0,num(id,d));render();}));
+$('iRS').addEventListener('change',()=>{S.rs=$('iRS').checked;render();});
+$('pQuick').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.power=+b.dataset.v;if(CAL)CAL.target=S.power;$('iPower').value=S.power;render();
+  window.dispatchEvent(new CustomEvent('frh:power',{detail:{kwc:S.power}}));});
+$('iYield').addEventListener('input',()=>{const v=num('iYield',0);if(v>0){S.yield=v;render();}});
+$('iShare').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.share=+b.dataset.v;render();});
+$('iBatt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.batt=+b.dataset.v;render();});
+$('eqList').addEventListener('input',e=>{const el=e.target;const id=el.dataset.id;if(!id)return;let it=S.eq.find(x=>x.id===id);if(!it){const d=EQ.find(x=>x.id===id);it={id,on:d.on,q:d.q,h:d.h};S.eq.push(it);}
+  if(el.dataset.k==='on')it.on=el.checked;else{const v=parseFloat(String(el.value).replace(',','.'));if(!isNaN(v))it[el.dataset.k]=Math.max(0,v);}render();});
+$('resetBtn').addEventListener('click',()=>{['deg','use','eff'].forEach(k=>S[k]=DEF[k]);S.yield=null;loadInputs();render();toast('Hypothèses remises par défaut');});
+$('sCopyBtn').addEventListener('click',()=>{const R=compute();const txt=`Simulation FRH – ${new Date().toLocaleDateString('fr-FR')}\n${tName(S.terr)} · ${R.P} kWc · ${S.batt?'batterie 8 kWh':'sans batterie'} · prix ${eur(compute().cost)}\n\n`+renderStory.txt;
+  const ta=$('sCopyArea');const fb=()=>{ta.hidden=false;ta.value=txt;ta.focus();ta.select();toast('Texte sélectionné : Ctrl + C pour copier');};
+  try{navigator.clipboard.writeText(txt).then(()=>{ta.hidden=true;toast('Résumé copié');},fb);}catch(e){fb();}});
+document.querySelectorAll('.card.coll .ctog').forEach(b=>b.addEventListener('click',()=>{const c=b.closest('.card');const v=!c.classList.contains('collapsed');c.classList.toggle('collapsed',v);b.setAttribute('aria-expanded',String(!v));
+  try{const u=JSON.parse(localStorage.getItem('frh-simu-ui')||'{}');u[c.id]=v;localStorage.setItem('frh-simu-ui',JSON.stringify(u));}catch(e){}}));
+(function(){let u={};try{u=JSON.parse(localStorage.getItem('frh-simu-ui')||'{}');}catch(e){}const def={cClient:false,cInst:false,cEq:false,cHyp:true};
+  Object.keys(def).forEach(id=>{const c=$(id),v=u[id]??def[id];c.classList.toggle('collapsed',v);c.querySelector('.ctog').setAttribute('aria-expanded',String(!v));});})();
+
+/* ---------- onglets ---------- */
+function showTab(t){if(t!=='day')dayStop();[['info','viewInfo','tabInfo'],['res','viewRes','tabRes'],['day','viewDay','tabDay'],['fin','viewFin','tabFin'],['tar','viewTar','tabTar']].forEach(([k,v,b])=>{$(v).hidden=k!==t;$(b).classList.toggle('on',k===t);$(b).setAttribute('aria-selected',String(k===t));});
+  if(t==='tar')renderTarifs();if(t==='res')render();if(t==='fin')renderFin();if(t==='day')dayOpen();window.scrollTo(0,0);}
+$('tabInfo').addEventListener('click',()=>showTab('info'));$('tabFin').addEventListener('click',()=>showTab('fin'));$('tabDay').addEventListener('click',()=>showTab('day'));$('tabRes').addEventListener('click',()=>showTab('res'));$('tabTar').addEventListener('click',()=>showTab('tar'));
+$('goRes').addEventListener('click',()=>showTab('res'));$('backInfo').addEventListener('click',()=>showTab('info'));
+
+/* ---------- 4. financement (mensualités réelles de la grille du financeur) ---------- */
+const addMonths=(d,n)=>{const x=new Date(d);x.setMonth(x.getMonth()+n);return x;};
+const fmtD=d=>d.toLocaleDateString('fr-FR');
+/* taux mensuel implicite d'une mensualité (capital, durée) : sert à recalculer le capital restant dû et la mensualité d'un autre capital */
+function impliedRate(cap,m,n){if(m*n<=cap+1e-6)return 0;let lo=0,hi=0.05;for(let k=0;k<80;k++){const r=(lo+hi)/2,f=r/(1-Math.pow(1+r,-n));if(f*cap>m)hi=r;else lo=r;}return (lo+hi)/2;}
+function crd(cap,r,m,k){return r===0?Math.max(0,cap-m*k):Math.max(0,cap*Math.pow(1+r,k)-m*(Math.pow(1+r,k)-1)/r);}
+function renderFin(){const R=compute();
+  if(!S.instDate){S.instDate=new Date().toISOString().slice(0,10);save();}
+  if(document.activeElement!==$('fBirth'))$('fBirth').value=S.birth||'';if(document.activeElement!==$('fInst'))$('fInst').value=S.instDate;
+  $('fConf').innerHTML=R.inst?`<b>${R.cfg.label}</b> · ${S.rs?'avec remise RS':'prix standard'}`:`<span class="warnline">${R.P} kWc ${S.batt?'avec':'sans'} batterie : pas de grille de financement (3, 6 ou 9 kWc uniquement).</span>`;
+  $('fPrix').textContent=eur(R.cost);$('fPrixS').textContent=R.inst?(S.rs?`avec remise RS de ${eur(R.inst.remise)}`:'prix standard'):'prix saisi';
+  $('fPrime').textContent='− '+eur(R.prime);$('fPrimeS').textContent=`versée la ${R.primeYear===1?'1ʳᵉ':R.primeYear+'ᵉ'} année · coût net ${eur(R.cost-R.prime)}`;
+  $('fGain').textContent=eur(R.avgMonth);$('fRoi').textContent=R.payback===null?'—':nf(R.payback,1)+' ans';$('fRoiS').textContent=`${eur(R.cost-R.prime)} ÷ ${eur(R.avgMonth*12)} par an`;
+  const box=$('fScen');const inst0=new Date(S.instDate+'T12:00:00');const debut=addMonths(inst0,6);
+  if(!R.inst){box.innerHTML='<p class="small">Choisissez 3, 6 ou 9 kWc pour afficher les scénarios de financement.</p>';$('fDates').textContent='';return;}
+  if(!S.birth){box.innerHTML='<p class="small">Saisissez la date de naissance du client pour calculer les durées possibles (crédit terminé avant 81 ans).</p>';$('fDates').textContent=`Début du crédit : ${fmtD(debut)} (6 mois après l'installation).`;return;}
+  const birth=new Date(S.birth+'T12:00:00'),limite=new Date(birth);limite.setFullYear(birth.getFullYear()+81);
+  const grid=S.rs?R.inst.mensRS:R.inst.mens,cap0=R.cost,gain=R.avgMonth;
+  const ok=(start,n)=>addMonths(start,n)<=limite;
+  const elig1=DUREES.filter(n=>ok(debut,n)&&grid[n]>0);
+  $('fDates').innerHTML=`Début du crédit : <b>${fmtD(debut)}</b> (6 mois après l'installation) · limite d'âge : crédit terminé avant le <b>${fmtD(limite)}</b> (81 ans).`;
+  if(!elig1.length){box.innerHTML='<p class="warnline">Aucune durée possible : le crédit dépasserait la limite des 81 ans.</p>';return;}
+  // scénario 1 : durée max éligible, capital = prix complet (mensualité de la grille)
+  const n1=Math.max(...elig1),m1=grid[n1],r1=impliedRate(cap0,m1,n1);
+  // capital restant dû après 12 mensualités, puis la prime vient en déduction
+  const crd12=crd(cap0,r1,m1,12),cap2=Math.max(0,crd12-R.prime),debut2=addMonths(debut,12);
+  // mensualité d'un autre capital sur une durée n : proportionnelle à la grille (même taux)
+  const mensFor=(cap,n)=>grid[n]>0?cap*grid[n]/cap0:0;
+  const elig2=DUREES.filter(n=>ok(debut2,n)&&grid[n]>0);
+  const s2a=(()=>{const c=elig2.filter(n=>mensFor(cap2,n)<=gain).sort((a,b)=>a-b);return c.length?c[0]:(elig2.length?Math.max(...elig2):null);})();
+  const s2b=elig2.includes(n1)?n1:(elig2.length?Math.max(...elig2):null);
+  const pill=m=>m<=gain?`<span class="okp">${eur(m,2)} ≤ gain de ${eur(gain)}</span>`:`<span class="kop">${eur(m,2)} > gain de ${eur(gain)}</span>`;
+  const card=(cls,t,sub,cap,n,m,det)=>`<div class="sc ${cls}"><span class="st">${t}</span><span class="sub">${sub}</span><span class="cap">Capital : <b>${eur(cap)}</b></span>
+    <span class="dur">${n??'—'}<small> mois</small></span><span class="mens">${n?eur(m,2):'—'}<small> /mois</small></span>${n?pill(m):''}${det||''}</div>`;
+  const det2=`<span class="det">Capital restant dû après 12 mensualités : ${eur(crd12)}<br>− prime ${eur(R.prime)} = <b>${eur(cap2)}</b><br>Nouveau crédit à partir du ${fmtD(debut2)}</span>`;
+  box.innerHTML=`<div class="scen">`+card('a','Départ','Durée la plus longue possible<br>sur le prix complet (avant prime)',cap0,n1,m1,`<span class="det">12 mensualités jusqu'au versement de la prime</span>`)
+    +card('b','Durée plus courte','Après la prime : durée la plus courte<br>avec une mensualité ≤ au gain',cap2,s2a,s2a?mensFor(cap2,s2a):0,det2)
+    +card('c','Mensualité allégée','Après la prime : même durée<br>que le départ, mensualité réduite',cap2,s2b,s2b?mensFor(cap2,s2b):0,det2)+`</div>`;}
+$('fBirth').addEventListener('input',()=>{S.birth=$('fBirth').value;save();renderFin();});
+$('fInst').addEventListener('input',()=>{if($('fInst').value){S.instDate=$('fInst').value;save();renderFin();}});
+
+/* ---------- 3. ma journée : simulation au quart d'heure + animation ---------- */
+const DAY={sim:null,t:6,playing:false,speed:1,raf:null,last:0,built:false,dash:0};
+const SR=6,SS=18,DT=0.25,NST=96,PMAX=5;
+const LOADW=[0.55,0.5,0.5,0.5,0.5,0.6,1.0,1.3,1.1,0.9,0.85,0.9,1.0,0.95,0.9,0.95,1.0,1.1,1.5,1.7,1.6,1.4,1.0,0.7];
+function daySim(){const R=compute();const pvS=[],ldS=[];let pvSum=0,dW=0,nW=0;
+  for(let i=0;i<NST;i++){const h=(i+0.5)*DT;const sh=h>SR&&h<SS?Math.pow(Math.sin(Math.PI*(h-SR)/(SS-SR)),1.3):0;pvS.push(sh);pvSum+=sh*DT;const w=LOADW[Math.floor(h)];ldS.push(w);if(sh>0)dW+=w*DT;else nW+=w*DT;}
+  const pv=pvS.map(v=>pvSum?v*R.pvDay/pvSum:0);const ld=ldS.map((w,i)=>pvS[i]>0?(dW?w*R.dayLoad/dW:0):(nW?w*R.nightLoad/nW:0));
+  const U=R.nom?R.useful:0,eta=Math.sqrt(R.eta*R.eta)/1;
+  const run=soc0=>{let soc=soc0;const out=[];for(let i=0;i<NST;i++){const p=pv[i],l=ld[i],direct=Math.min(p,l);let ex=p-direct,def=l-direct;
+      const ch=U?Math.min(ex,PMAX,(U-soc)/(eta*DT)):0;soc+=ch*eta*DT;const sell=ex-ch;
+      const dis=U?Math.min(def,PMAX,soc*eta/DT):0;soc-=dis/eta*DT;const buy=def-dis;out.push({pv:p,load:l,direct,ch,dis,sell,buy,soc});}return{out,soc};};
+  let r=run(0);for(let k=0;k<3;k++)r=run(r.soc);
+  /* compteurs depuis 6 h du matin (la journée commence au lever du soleil) */
+  const cum=new Array(NST);let c={pv:0,load:0,sol:0,ch:0,sell:0,buy:0};const i0=Math.round(6/DT);
+  for(let k=0;k<NST;k++){const i=(i0+k)%NST,o=r.out[i];c={pv:c.pv+o.pv*DT,load:c.load+o.load*DT,sol:c.sol+(o.direct+o.dis)*DT,ch:c.ch+o.ch*DT,sell:c.sell+o.sell*DT,buy:c.buy+o.buy*DT};cum[i]=c;}
+  return{R,U,st:r.out,cum};}
+const NS='http://www.w3.org/2000/svg';
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function buildScene(){const svg=$('scene');svg.innerHTML='';const D={};
+  const defs=el('defs',{},svg);const g=el('linearGradient',{id:'sky',x1:0,y1:0,x2:0,y2:1},defs);D.s1=el('stop',{offset:'0','stop-color':'#0f1d33'},g);D.s2=el('stop',{offset:'1','stop-color':'#1d3557'},g);
+  D.sky=el('rect',{x:0,y:0,width:960,height:470,fill:'url(#sky)'},svg);
+  D.stars=el('g',{},svg);let seed=3;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;for(let i=0;i<60;i++)el('circle',{cx:rnd()*960,cy:rnd()*250,r:rnd()*1.4+0.4,fill:'#fff'},D.stars);
+  D.sun=el('g',{},svg);el('circle',{r:34,fill:'#ffd76a',opacity:.35},D.sun);el('circle',{r:24,fill:'#ffc93c'},D.sun);
+  D.moon=el('g',{},svg);el('circle',{r:18,fill:'#e8eef7'},D.moon);el('circle',{cx:7,cy:-5,r:16,fill:'#0f1d33',class:'moonshade'},D.moon);
+  D.ground=el('rect',{x:0,y:372,width:960,height:98,fill:'#4f7a3a'},svg);el('rect',{x:0,y:372,width:960,height:6,fill:'#3d6430'},svg);
+  // maison
+  const H=el('g',{},svg);D.house=H;
+  el('rect',{x:300,y:262,width:250,height:112,fill:'#efe6d6'},H);
+  el('polygon',{points:'282,264 425,166 568,264',fill:'#b8623f'},H);
+  D.pan=el('g',{},H);[[238,24,318,532],[210,24,356,494],[184,20,392,458]].forEach(([y,h,x0,x1])=>{const n=Math.floor((x1-x0+4)/34),w=n*34-4,st=x0+((x1-x0)-w)/2;
+    for(let c=0;c<n;c++)el('rect',{x:st+c*34,y,width:30,height:h,fill:'#1b2b4d',stroke:'#8fa7cc','stroke-width':1},D.pan);});
+  D.win1=el('rect',{x:330,y:296,width:52,height:40,fill:'#2b3a4a',stroke:'#7a6a55','stroke-width':3},H);D.win2=el('rect',{x:468,y:296,width:52,height:40,fill:'#2b3a4a',stroke:'#7a6a55','stroke-width':3},H);
+  el('rect',{x:404,y:310,width:42,height:64,fill:'#7a5236'},H);
+  // batterie
+  const B=el('g',{},svg);D.batt=B;el('rect',{x:640,y:270,width:62,height:104,rx:8,fill:'#e7ecef',stroke:'#8b9aa3','stroke-width':3},B);el('rect',{x:658,y:262,width:26,height:10,rx:2,fill:'#8b9aa3'},B);
+  D.bfill=el('rect',{x:646,y:368,width:50,height:0,rx:4,fill:'#2f7fb8'},B);D.bpct=el('text',{x:671,y:394,'text-anchor':'middle','font-size':15,'font-weight':700,fill:'#fff'},B);
+  // réseau (pylône)
+  const G=el('g',{stroke:'#cfd6da','stroke-width':3,fill:'none'},svg);D.grid=G;
+  el('path',{d:'M840 374 L862 210 L884 374 M848 312 L876 312 M852 270 L872 270 M830 228 L894 228 M836 248 L888 248'},G);
+  el('path',{d:'M894 228 Q 930 240 960 236 M830 228 Q 800 236 770 232'},G);
+  // trajets d'énergie
+  const P=(d,v)=>{const p=el('path',{d,class:'flowpath',stroke:`var(${v})`},svg);return p;};
+  D.fDirect=P('M425 214 C 425 250 425 262 425 300','--c-direct');
+  D.fCharge=P('M520 205 C 600 200 655 220 671 266','--c-batt');
+  D.fDis=P('M640 330 C 600 330 575 330 552 330','--c-batt');
+  D.fSell=P('M540 190 C 680 150 800 170 862 214','--c-sell');
+  D.fBuy=P('M840 300 C 760 300 640 380 552 352','--c-buy');
+  // étiquettes
+  const T=(x,y,a)=>el('text',{x,y,'text-anchor':a||'middle','font-size':14,'font-weight':700,fill:'#fff','paint-order':'stroke',stroke:'rgba(0,0,0,.55)','stroke-width':3},svg);
+  D.tPv=T(425,152);D.tHouse=T(425,404);D.tBatt=T(671,248);D.tGrid=T(862,196);D.tGrid2=T(862,404);
+  D.tClock=el('text',{x:28,y:46,'font-size':30,'font-weight':700,fill:'#fff','paint-order':'stroke',stroke:'rgba(0,0,0,.4)','stroke-width':3},svg);
+  DAY.D=D;DAY.built=true;}
+const kw=v=>nf(v,v<10?1:0)+' kW';
+function mix(a,b,t){const pa=[1,3,5].map(i=>parseInt(a.slice(i,i+2),16)),pb=[1,3,5].map(i=>parseInt(b.slice(i,i+2),16));return '#'+pa.map((v,i)=>Math.round(v+(pb[i]-v)*t).toString(16).padStart(2,'0')).join('');}
+function dayDraw(){if(!DAY.sim)return;const D=DAY.D,t=DAY.t,i=Math.min(NST-1,Math.floor(t/DT)),o=DAY.sim.st[i],c=DAY.sim.cum[i],U=DAY.sim.U;
+  // ciel
+  const el1=t>SR-1&&t<SS+1?Math.max(0,Math.sin(Math.PI*(t-SR+0.6)/(SS-SR+1.2))):0;const dusk=Math.max(0,1-Math.abs(t-SR)/1.2)+Math.max(0,1-Math.abs(t-SS)/1.2);
+  D.s1.setAttribute('stop-color',mix('#0f1d33','#5aa7e0',el1));D.s2.setAttribute('stop-color',mix(mix('#1d3557','#bfe3f5',el1),'#f2a65a',Math.min(0.75,dusk*0.8)));
+  D.stars.setAttribute('opacity',Math.max(0,1-el1*2.2));D.ground.setAttribute('fill',mix('#1f3220','#4f7a3a',Math.min(1,el1*1.6+0.15)));
+  D.moon.querySelector('.moonshade').setAttribute('fill',mix('#0f1d33','#5aa7e0',el1));
+  if(t>SR-0.3&&t<SS+0.3){const a=Math.PI*(t-SR)/(SS-SR);D.sun.setAttribute('transform',`translate(${480-400*Math.cos(a)},${380-300*Math.sin(a)})`);D.sun.setAttribute('opacity',1);}else D.sun.setAttribute('opacity',0);
+  const tm=t>=SS?t-SS:t+24-SS;if(tm<12){const a=Math.PI*tm/12;D.moon.setAttribute('transform',`translate(${480-400*Math.cos(a)},${360-260*Math.sin(a)})`);D.moon.setAttribute('opacity',Math.max(0,1-el1*3));}else D.moon.setAttribute('opacity',0);
+  const lit=el1<0.25?'#ffd98a':'#2b3a4a';D.win1.setAttribute('fill',lit);D.win2.setAttribute('fill',lit);
+  // batterie
+  const pct=U?o.soc/U:0;D.batt.setAttribute('opacity',U?1:0.25);D.bfill.setAttribute('height',92*pct);D.bfill.setAttribute('y',368-92*pct);D.bpct.textContent=U?nf(pct*100)+' %':'—';
+  D.bpct.setAttribute('fill',pct>0.25?'#fff':'#2f7fb8');
+  // flux
+  const F=[[D.fDirect,o.direct],[D.fCharge,o.ch],[D.fDis,o.dis],[D.fSell,o.sell],[D.fBuy,o.buy]];
+  F.forEach(([p,v])=>{const on=v>0.03;p.setAttribute('stroke-width',on?3+Math.min(v,6)*2.2:0);p.setAttribute('opacity',on?1:0);p.setAttribute('stroke-dashoffset',-DAY.dash);});
+  D.tPv.textContent=o.pv>0.03?'Panneaux '+kw(o.pv):'Panneaux à l\'arrêt';D.tHouse.textContent='Maison '+kw(o.load);D.tBatt.textContent=U?(o.ch>0.03?'Charge '+kw(o.ch):o.dis>0.03?'Décharge '+kw(o.dis):'Batterie'):'Sans batterie';
+  D.tGrid.textContent=o.sell>0.03?'Revente '+kw(o.sell):'';D.tGrid2.textContent=o.buy>0.03?'Achat '+kw(o.buy):'Réseau';
+  const hh=Math.floor(t),mm=Math.round((t-hh)*60)%60,clk=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');D.tClock.textContent=clk;$('dClock').textContent=clk;
+  if(document.activeElement!==$('dTime'))$('dTime').value=(t-6+24)%24;
+  // commentaire
+  let ph,pt;if(o.sell>0.03){pt='Plein soleil';ph=U?'La batterie est pleine : le surplus solaire est revendu sur le réseau.':'Le surplus solaire que la maison ne consomme pas est revendu sur le réseau.';}
+  else if(o.ch>0.03){pt='Journée';ph='Les panneaux alimentent la maison et le surplus recharge la batterie.';}
+  else if(o.pv>0.03&&o.buy>0.03){pt=t<12?'Lever du soleil':'Fin de journée';ph='Les panneaux couvrent une partie de la consommation, le réseau complète.';}
+  else if(o.pv>0.03){pt='Journée';ph='Les panneaux couvrent toute la consommation de la maison.';}
+  else if(o.dis>0.03&&o.buy<0.03){pt=t<SR?'Nuit':'Soirée';ph='Le soleil est couché : la batterie alimente la maison avec l\'énergie stockée dans la journée.';}
+  else if(o.dis>0.03){pt='Nuit';ph='La batterie fournit sa puissance maximale, le réseau complète.';}
+  else{pt='Nuit';ph=U?'La batterie est vide : la maison est alimentée par le réseau jusqu\'au lever du soleil.':'Sans soleil et sans batterie, la maison est alimentée par le réseau.';}
+  $('dPhaseT').textContent=pt;$('dPhase').textContent=ph;
+  const row=(col,lab,v,unit)=>`<div class="frow${v>0.03?'':' off'}"><i class="dot" style="background:var(${col})"></i><span>${lab}</span><b>${nf(v,1)} ${unit}</b></div>`;
+  $('dFlows').innerHTML=row('--c-direct','Production des panneaux',o.pv,'kW')+row('--c-grid','Consommation de la maison',o.load,'kW')+row('--c-direct','Soleil consommé en direct',o.direct,'kW')
+    +(U?row('--c-batt','Charge de la batterie',o.ch,'kW')+row('--c-batt','Décharge de la batterie',o.dis,'kW'):'')+row('--c-sell','Revente au réseau',o.sell,'kW')+row('--c-buy','Achat au réseau',o.buy,'kW');
+  $('dCum').innerHTML=row('--c-direct','Produit',c.pv,'kWh')+row('--c-grid','Consommé',c.load,'kWh')+row('--c-direct','Fourni par le solaire (direct + batterie)',c.sol,'kWh')
+    +(U?row('--c-batt','Stocké dans la batterie',c.ch,'kWh'):'')+row('--c-sell','Revendu',c.sell,'kWh')+row('--c-buy','Acheté au réseau',c.buy,'kWh');}
+function dayLoop(ts){if(!DAY.playing)return;const dt=DAY.last?Math.min(0.1,(ts-DAY.last)/1000):0;DAY.last=ts;
+  DAY.t+=dt*DAY.speed*(24/40);if(DAY.t>=24)DAY.t-=24;DAY.dash+=dt*60*(0.6+DAY.speed*0.4);dayDraw();DAY.raf=requestAnimationFrame(dayLoop);}
+function dayPlay(on){DAY.playing=on;$('dPlay').textContent=on?'Pause':'Lecture';if(on){DAY.last=0;DAY.raf=requestAnimationFrame(dayLoop);}else cancelAnimationFrame(DAY.raf);}
+function dayStop(){if(DAY.playing)dayPlay(false);}
+function dayOpen(){if(!DAY.built)buildScene();DAY.t=6;DAY.sim=daySim();const R=DAY.sim.R;
+  $('dNote').textContent=`Journée moyenne : ${nf(R.pvDay,1)} kWh produits, ${nf(R.dayLoadTot,1)} kWh consommés (${R.P} kWc${R.nom?', batterie 8 kWh':', sans batterie'}). Illustration au quart d'heure, soleil de 6 h à 18 h.`;
+  document.querySelectorAll('#dSpeed button').forEach(b=>b.classList.toggle('on',+b.dataset.v===DAY.speed));dayDraw();
+  if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches)dayPlay(true);}
+$('dPlay').addEventListener('click',()=>dayPlay(!DAY.playing));
+$('dTime').addEventListener('input',()=>{DAY.t=(+$('dTime').value+6)%24;dayDraw();});
+$('dSpeed').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;DAY.speed=+b.dataset.v;document.querySelectorAll('#dSpeed button').forEach(x=>x.classList.toggle('on',x===b));});
+
+/* ---------- interface des tarifs ---------- */
+function storeLocal(){localOverride=true;try{localStorage.setItem(TKEY,JSON.stringify(TARIFS));}catch(e){}renderTarState();}
+function renderTarState(){$('tarState').innerHTML=localOverride?'<span class="pill warn">Modifiés sur cet appareil</span>':'<span class="pill ok">Tarifs publiés</span>';
+  $('tSource').textContent=`Tarifs publiés : ${tarSource}, mise à jour du ${fmtDate(PUBLISHED.maj)}.`;}
+function renderParams(){const I=TARIFS.installations||(TARIFS.installations=normInst());const T=TARIFS.territoires[S.terr]||Object.values(TARIFS.territoires)[0];
+  const primeOf=c=>{const i=bandIndex(T.primes,c.kwc);return c.kwc*1000*T.primes[i].montant_euros_par_wc;};
+  $('pRows').innerHTML=CONFIGS.map(c=>{const x=I[c.id];return `<tr><td>${c.label}</td><td><input type="number" step="100" min="0" value="${x.prix}" data-c="${c.id}" data-k="prix" aria-label="Prix ${c.label}"></td>
+    <td><input type="number" step="100" min="0" value="${x.remise}" data-c="${c.id}" data-k="remise" aria-label="Remise RS ${c.label}"></td><td class="prs">${eur(x.prix-x.remise)}</td><td>${eur(primeOf(c))} <span class="small">(${esc(tName(S.terr))})</span></td></tr>`;}).join('');
+  $('mRows').innerHTML=CONFIGS.map(c=>{const x=I[c.id];const row=(k,lab)=>`<td class="small">${lab}</td>`+DUREES.map(n=>`<td><input type="number" step="0.01" min="0" value="${x[k][n]}" data-c="${c.id}" data-k="${k}" data-n="${n}" aria-label="Mensualité ${c.label} ${lab} ${n} mois"></td>`).join('');
+    return `<tr><td rowspan="2">${c.label}</td>${row('mens','Standard')}</tr><tr>${row('mensRS','Avec RS')}</tr>`;}).join('');}
+$('pRows').addEventListener('input',e=>{const el=e.target;if(!el.dataset.c)return;const v=parseFloat(String(el.value).replace(',','.'));if(isNaN(v))return;const x=TARIFS.installations[el.dataset.c];x[el.dataset.k]=v;
+  el.closest('tr').querySelector('.prs').textContent=eur(x.prix-x.remise);storeLocal();});
+$('mRows').addEventListener('input',e=>{const el=e.target;if(!el.dataset.c)return;const v=parseFloat(String(el.value).replace(',','.'));if(isNaN(v))return;TARIFS.installations[el.dataset.c][el.dataset.k][+el.dataset.n]=v;storeLocal();});
+function renderTarifs(){renderParams();const sel=$('tTerr');const cur=sel.value||S.terr;fillTerr(sel);sel.value=TARIFS.territoires[cur]?cur:Object.keys(TARIFS.territoires)[0];
+  const T=TARIFS.territoires[sel.value];$('tDate').value=TARIFS.maj||'';$('tYear').value=T.prime_annee;$('tYield').value=T.productible;
+  $('tRows').innerHTML=T.tarif_rachat.map((b,i)=>{const p=T.primes[i]||{montant_euros_par_wc:0};const ref=b.max<=3?3:b.max<=9?9:b.max<=36?36:b.max<=100?100:250;
+    return `<tr><td>${BAND_LABELS[i]||`${b.min} à ${b.max} kWc`}</td><td><input type="number" step="0.0001" min="0" value="${b.tarif}" data-i="${i}" data-k="tarif" aria-label="Tarif ${BAND_LABELS[i]}"></td>
+      <td><input type="number" step="0.01" min="0" value="${p.montant_euros_par_wc}" data-i="${i}" data-k="prime" aria-label="Prime ${BAND_LABELS[i]}"></td><td class="small">${ref} kWc → ${eur(ref*1000*p.montant_euros_par_wc)}</td></tr>`;}).join('');
+  renderTarState();}
+$('tTerr').addEventListener('change',renderTarifs);
+$('tRows').addEventListener('input',e=>{const el=e.target;if(!el.dataset.k)return;const T=TARIFS.territoires[$('tTerr').value];const v=parseFloat(String(el.value).replace(',','.'));if(isNaN(v))return;
+  if(el.dataset.k==='tarif')T.tarif_rachat[+el.dataset.i].tarif=v;else T.primes[+el.dataset.i].montant_euros_par_wc=v;storeLocal();
+  const row=el.closest('tr');const p=T.primes[+el.dataset.i].montant_euros_par_wc,b=T.tarif_rachat[+el.dataset.i],ref=b.max<=3?3:b.max<=9?9:b.max<=36?36:b.max<=100?100:250;row.lastElementChild.textContent=`${ref} kWc → ${eur(ref*1000*p)}`;});
+$('tDate').addEventListener('input',()=>{TARIFS.maj=$('tDate').value;storeLocal();});
+$('tYear').addEventListener('input',()=>{const v=parseInt($('tYear').value,10);if(v>=1){TARIFS.territoires[$('tTerr').value].prime_annee=v;storeLocal();}});
+$('tYield').addEventListener('input',()=>{const v=num('tYield',0);if(v>0){TARIFS.territoires[$('tTerr').value].productible=v;storeLocal();}});
+const tarJson=()=>JSON.stringify({maj:TARIFS.maj,installations:TARIFS.installations,territoires:TARIFS.territoires},null,2);
+$('tDown').addEventListener('click',()=>{try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([tarJson()],{type:'application/json'}));a.download='tarifs.json';document.body.appendChild(a);a.click();a.remove();toast('tarifs.json téléchargé');}catch(e){toast('Téléchargement impossible ici : utilisez « Copier le contenu ».');}});
+$('tCopy').addEventListener('click',()=>{const ta=$('sTArea');const fb=()=>{ta.hidden=false;ta.value=tarJson();ta.focus();ta.select();toast('Texte sélectionné : Ctrl + C pour copier');};
+  try{navigator.clipboard.writeText(tarJson()).then(()=>toast('Contenu de tarifs.json copié'),fb);}catch(e){fb();}});
+$('tReset').addEventListener('click',()=>{try{localStorage.removeItem(TKEY);}catch(e){}TARIFS=JSON.parse(JSON.stringify(PUBLISHED));localOverride=false;renderTarifs();toast('Tarifs publiés rétablis');});
+
+/* ---------- démarrage : tarifs publiés (tarifs.json) puis modifications locales plus récentes ---------- */
+new ResizeObserver(()=>document.documentElement.style.setProperty('--hdr',$('top').offsetHeight+'px')).observe($('top'));
+function applyLocal(){try{const l=normalize(JSON.parse(localStorage.getItem(TKEY)||'null'));
+  if(l&&(!PUBLISHED.maj||!l.maj||l.maj>=PUBLISHED.maj)){TARIFS=l;localOverride=true;}else{TARIFS=JSON.parse(JSON.stringify(PUBLISHED));localOverride=false;if(l)localStorage.removeItem(TKEY);}}catch(e){TARIFS=JSON.parse(JSON.stringify(PUBLISHED));}}
+function start(){applyLocal();loadInputs();render();renderTarState();}
+start();
+if(location.protocol!=='file:'){fetch('tarifs.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{const n=normalize(j);if(n){PUBLISHED=n;tarSource='fichier tarifs.json';start();}}).catch(()=>{});}
+})();
+</script>
+<script>
+/* routeur des deux parties : toiture (calepinage) et simulation */
+(function(){
+  const CAL=['tabMap','tab2d','tab3d'],SIM=['tabInfo','tabRes','tabDay','tabFin','tabTar'];
+  const g=id=>document.getElementById(id);
+  function off(list){list.forEach(id=>{const b=g(id);b.classList.remove('on');b.setAttribute('aria-selected','false');});}
+  document.getElementById('top').addEventListener('click',e=>{const b=e.target.closest('button[role="tab"]');if(!b)return;
+    if(CAL.includes(b.id)){if(g('appCalep').hidden){if(window.FRH_simHide)window.FRH_simHide();g('appSim').hidden=true;g('appCalep').hidden=false;}off(SIM);}
+    else if(SIM.includes(b.id)){g('appCalep').hidden=true;g('appSim').hidden=false;off(CAL);}},true);
+  off(SIM);
+})();
+</script>
+
 </body>
 </html>
