@@ -342,9 +342,10 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14p
 
 /* ---- application fusionnée ---- */
 #appCalep,#appSim{display:flex;flex-direction:column;gap:14px;min-width:0}
-.navs{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
-.tabs .tgl{font:700 10px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);align-self:center;padding:0 6px 0 8px}
-@media (max-width:760px){.tabs .tgl{display:none}}
+.navs{display:flex;flex-wrap:wrap;gap:8px 12px;justify-content:flex-end;align-items:flex-end}
+.navg{display:flex;flex-direction:column;gap:3px}
+.navg .tgl{font:700 10px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:0 2px 0 6px;cursor:default;user-select:none;pointer-events:none}
+@media (max-width:760px){.navg .tgl{display:none}}
 </style>
 </head>
 <body>
@@ -357,21 +358,25 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14p
       <h1>Étude solaire</h1>
     </div>
     <nav class="navs" aria-label="Étapes">
+      <div class="navg"><span class="tgl" aria-hidden="true">Toiture</span>
       <div class="tabs" role="tablist" aria-label="Toiture">
-        <span class="tgl">Toiture</span>
         <button type="button" id="tabMap" role="tab" aria-selected="false">Carte</button>
         <button type="button" id="tab2d" class="on" role="tab" aria-selected="true">Plan 2D</button>
         <button type="button" id="tab3d" role="tab" aria-selected="false">Vue 3D</button>
       </div>
+      </div>
+      <div class="navg"><span class="tgl" aria-hidden="true">Simulation</span>
       <div class="tabs" role="tablist" aria-label="Simulation">
-        <span class="tgl">Simulation</span>
         <button type="button" id="tabInfo" role="tab" aria-selected="false">1. Informations</button>
         <button type="button" id="tabRes" role="tab" aria-selected="false">2. Résultats</button>
         <button type="button" id="tabDay" role="tab" aria-selected="false">3. Ma journée</button>
         <button type="button" id="tabFin" role="tab" aria-selected="false">4. Financement</button>
       </div>
+      </div>
+      <div class="navg"><span class="tgl" aria-hidden="true">Réglages</span>
       <div class="tabs" role="tablist" aria-label="Réglages">
         <button type="button" id="tabTar" role="tab" aria-selected="false" title="Prix, mensualités, tarifs">Paramètres</button>
+      </div>
       </div>
     </nav>
   </header>
@@ -563,7 +568,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14p
         </div>
         <div class="btnrow">
           <button type="button" class="btn acc" id="copyBtn">Copier le récapitulatif</button>
-          <button type="button" class="btn" id="shareBtn">Copier le projet (pour Claude)</button>
+          <button type="button" class="btn" id="shareBtn">Copier le projet</button>
           <button type="button" class="btn danger" id="clearBtn">Effacer le dessin</button>
         </div>
         <textarea class="copy" id="copyArea" hidden readonly aria-label="Récapitulatif à copier"></textarea>
@@ -1361,7 +1366,7 @@ $('shareBtn').addEventListener('click',()=>{const data=JSON.stringify({outil:'ca
   pans:S.pans.map(p=>({name:p.name,slope:p.slope,eaveH:p.eaveH,eave:p.eave,pose:p.pose,pts:p.pts.map(q=>[Math.round(q.x*10)/10,Math.round(q.y*10)/10])})),
   obstacles:S.obstacles.map(o=>({kind:o.kind,pts:o.pts.map(q=>[Math.round(q.x*10)/10,Math.round(q.y*10)/10])}))});const ta=$('copyArea');
   const fallback=()=>{ta.hidden=false;ta.value=data;ta.focus();ta.select();toast('Texte sélectionné : Ctrl + C pour copier');};
-  try{navigator.clipboard.writeText(data).then(()=>{ta.hidden=true;toast('Projet copié : collez-le dans la conversation avec Claude');},fallback);}catch(e){fallback();}});
+  try{navigator.clipboard.writeText(data).then(()=>{ta.hidden=true;toast('Projet copié dans le presse-papiers');},fallback);}catch(e){fallback();}});
 $('oKind').addEventListener('change',()=>{const it=selItem();if(!it)return;snapshot();it.kind=$('oKind').value;changed();});
 $('oDel').addEventListener('click',deleteSel);
 
