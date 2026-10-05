@@ -2362,7 +2362,7 @@ function gBill(fact,newb,rev){const eco=fact-newb,W=700,H=190,L=150,T=12,BH=46,G
     p.push(`<text x="${f1((x0+x1)/2)}" y="${y2+BH/2+5}" text-anchor="middle" class="bb-eco">– ${rE(eco)}${NB}€ d'économies</text>`);}
   const yr=y2+BH+26;p.push(`<text x="${L}" y="${yr}" class="bb-rev">${rev>0?`+ ${rE(rev)}${NB}€ de revente du surplus, soit `:'Soit '}${rE(eco+rev)}${NB}€ de gain par mois la première année</text>`);
   p.push('</svg>');return p.join('');}
-function gWaterfall(inv,prime,net){const W=700,H=146,base=110,top=20,sc=(base-top)/Math.max(inv,1),bw=116,xs=[98,292,486];const p=[`<svg viewBox="0 0 ${W} ${H}" class="chart">`];
+function gWaterfall(inv,prime,net){const W=700,H=154,base=118,top=34,sc=(base-top)/Math.max(inv,1),bw=116,xs=[98,292,486];const p=[`<svg viewBox="0 0 ${W} ${H}" class="chart">`];
   p.push(`<line x1="40" y1="${base}" x2="${W-40}" y2="${base}" stroke="${RC.line}" stroke-width="1"/>`);const bar=(x,y,h,f)=>`<rect x="${x}" y="${f1(y)}" width="${bw}" height="${f1(h)}" rx="6" fill="${f}"/>`;
   const h1=inv*sc,h2=prime*sc,y2=base-h1,h3=net*sc;p.push(bar(xs[0],base-h1,h1,RC.slate)+bar(xs[1],y2,h2,RC.amber)+bar(xs[2],base-h3,h3,RC.em600));
   p.push(`<line x1="${xs[0]+bw}" y1="${f1(base-h1)}" x2="${xs[1]}" y2="${f1(base-h1)}" stroke="${RC.faint}" stroke-width="1.2" stroke-dasharray="3 3"/><line x1="${xs[1]+bw}" y1="${f1(y2+h2)}" x2="${xs[2]}" y2="${f1(y2+h2)}" stroke="${RC.faint}" stroke-width="1.2" stroke-dasharray="3 3"/>`);
@@ -2381,6 +2381,42 @@ function gCumul(cum,inv,be){const W=700,H=272,L=64,R=22,T=20,B=40;const step=rSt
   const ex=px(20),ey=py(cum[19]);p.push(`<circle cx="${f1(ex)}" cy="${f1(ey)}" r="5" fill="${RC.em600}"/><text x="${f1(ex-6)}" y="${f1(ey-14)}" text-anchor="end" class="pt-val">${rE(cum[19])}${NB}€</text>`);
   [1,5,10,15,20].forEach(i=>p.push(`<text x="${f1(px(i))}" y="${H-B+22}" text-anchor="middle" class="ax">an ${i}</text>`));
   p.push(`<line x1="${L}" y1="${f1(py(0))}" x2="${W-R}" y2="${f1(py(0))}" stroke="${RC.faint}" stroke-width="1"/></svg>`);return p.join('');}
+function gDay(sim){/* journée type, de 6 h à 6 h : consommation par origine + production + charge de la batterie */
+  const st=sim.st,U=sim.U||1,i0=24,N=st.length,ord=[...Array(N)].map((_,k)=>st[(i0+k)%N]);
+  const W=700,L=46,R=16,T=14,H1=98,GAP=22,H2=28,B=24,H=T+H1+GAP+H2+B;const kmax=Math.max(...ord.map(o=>Math.max(o.pv,o.load)),0.5);const step=kmax>4?2:kmax>2?1:0.5,ymax=Math.ceil(kmax*1.08/step)*step;
+  const px=k=>L+(W-L-R)*k/N,py=v=>T+H1-H1*v/ymax,y2=v=>T+H1+GAP+H2-H2*v;const p=[`<svg viewBox="0 0 ${W} ${H}" class="chart">`];
+  p.push(`<rect x="${px(48)}" y="${T}" width="${f1(px(N)-px(48))}" height="${H1}" fill="#F1F5F9"/><rect x="${px(48)}" y="${T+H1+GAP}" width="${f1(px(N)-px(48))}" height="${H2}" fill="#F1F5F9"/>`);
+  p.push(`<text x="${f1(px(24))}" y="${T+11}" text-anchor="middle" class="ax-em">Journée</text><text x="${f1(px(72))}" y="${T+11}" text-anchor="middle" class="ax-em">Soir et nuit</text>`);
+  for(let v=0;v<=ymax+1e-6;v+=step)p.push(`<line x1="${L}" y1="${f1(py(v))}" x2="${W-R}" y2="${f1(py(v))}" stroke="${RC.line}" stroke-width="1"/><text x="${L-8}" y="${f1(py(v)+4)}" text-anchor="end" class="ax">${rD(v,1)} kW</text>`);
+  const band=(lo,hi,fill)=>{let d='M'+ord.map((o,k)=>f1(px(k+.5))+','+f1(py(hi(o)))).join(' L');d+=' L'+ord.map((o,k)=>[k,o]).reverse().map(([k,o])=>f1(px(k+.5))+','+f1(py(lo(o)))).join(' L')+' Z';return `<path d="${d}" fill="${fill}"/>`;};
+  p.push(band(o=>0,o=>o.direct,RC.em600));p.push(band(o=>o.direct,o=>o.direct+o.ch,RC.em300));p.push(band(o=>o.direct+o.ch,o=>o.direct+o.ch+o.dis,RC.em500));p.push(band(o=>o.direct+o.ch+o.dis,o=>o.direct+o.ch+o.dis+o.buy,'#CBD5E1'));
+  const line=(f,col,dash)=>`<path d="M${ord.map((o,k)=>f1(px(k+.5))+','+f1(py(f(o)))).join(' L')}" fill="none" stroke="${col}" stroke-width="2.2"${dash?' stroke-dasharray="5 3"':''} stroke-linejoin="round"/>`;
+  p.push(line(o=>o.pv,RC.amber,true));p.push(line(o=>o.load,RC.slate,false));
+  p.push(`<line x1="${L}" y1="${f1(py(0))}" x2="${W-R}" y2="${f1(py(0))}" stroke="${RC.faint}" stroke-width="1"/>`);
+  /* charge de la batterie */
+  p.push(`<text x="${L}" y="${T+H1+GAP-7}" class="ax-em">Charge de la batterie</text>`);
+  [0,1].forEach(v=>p.push(`<line x1="${L}" y1="${f1(y2(v))}" x2="${W-R}" y2="${f1(y2(v))}" stroke="${RC.line}" stroke-width="1"/><text x="${L-8}" y="${f1(y2(v)+4)}" text-anchor="end" class="ax">${v*100}${NB}%</text>`));
+  const sd='M'+ord.map((o,k)=>f1(px(k+.5))+','+f1(y2(Math.min(1,o.soc/U)))).join(' L');p.push(`<path d="${sd} L${f1(px(N-.5))},${f1(y2(0))} L${f1(px(.5))},${f1(y2(0))} Z" fill="${RC.em500}" opacity=".28"/><path d="${sd}" fill="none" stroke="${RC.em600}" stroke-width="2"/>`);
+  [0,12,24,36,48,60,72,84,96].forEach(k=>{const h=(6+k/4)%24;p.push(`<text x="${f1(px(k))}" y="${H-8}" text-anchor="middle" class="ax">${h} h</text>`);});
+  p.push('</svg>');return p.join('');}
+function gOutage(rows,maxH){/* autonomie en cas de coupure : barres horizontales */
+  const W=700,L=230,R=70,BH=18,G=9,T=4,H=T+rows.length*(BH+G);const mx=Math.max(maxH||0,...rows.map(r=>r.h),1);const p=[`<svg viewBox="0 0 ${W} ${H}" class="chart">`];
+  rows.forEach((r,i)=>{const y=T+i*(BH+G),w=(W-L-R)*Math.min(r.h,mx)/mx;
+    p.push(`<text x="${L-12}" y="${y+BH/2-2}" text-anchor="end" class="bb-lab" style="font-size:11px">${r.label}</text><text x="${L-12}" y="${y+BH/2+11}" text-anchor="end" class="bb-sub">${r.sub}</text>`);
+    p.push(`<rect x="${L}" y="${y}" width="${f1(W-L-R)}" height="${BH}" rx="5" fill="#F1F5F9"/><rect x="${L}" y="${y}" width="${f1(Math.max(w,8))}" height="${BH}" rx="5" fill="${r.color||RC.em500}"/>`);
+    p.push(`<text x="${f1(L+Math.max(w,8)+8)}" y="${y+BH/2+5}" class="w-val" fill="${RC.em800}">${r.h>=100?rE(r.h):rD(r.h,r.h<10?1:0)} h</text>`);});
+  p.push('</svg>');return p.join('');}
+function gTimeline(F,opts){/* frise du crédit : 6 mois sans mensualité, mensualités de départ, prime, puis scénario(s) */
+  const endM=Math.max(F.pm+1,...opts.map(o=>F.pm+o.n));const W=700,L=118,R=20,T=22,RH=24,G=8,H=T+(1+opts.length)*(RH+G)+22;const px=m=>L+(W-L-R)*m/endM;const p=[`<svg viewBox="0 0 ${W} ${H}" class="chart">`];
+  const yr=Math.ceil(endM/12),stp=yr>12?3:2;for(let y=0;y<=yr;y+=(y===0?stp:stp)){const x=px(y*12);if(x>W-R+1)break;p.push(`<line x1="${f1(x)}" y1="${T-6}" x2="${f1(x)}" y2="${H-20}" stroke="${RC.line}" stroke-width="1"/><text x="${f1(x)}" y="${H-6}" text-anchor="${y===0?'start':'middle'}" class="ax">${y===0?'installation':y+' ans'}</text>`);}
+  const row=(i,lab,sub,segs)=>{const y=T+i*(RH+G);p.push(`<text x="${L-10}" y="${y+RH/2-2}" text-anchor="end" class="bb-lab" style="font-size:11px">${lab}</text><text x="${L-10}" y="${y+RH/2+11}" text-anchor="end" class="bb-sub">${sub}</text>`);
+    segs.forEach(s=>{const x0=px(s.a),x1=px(s.b);p.push(`<rect x="${f1(x0)}" y="${y}" width="${f1(Math.max(2,x1-x0))}" height="${RH}" rx="5" fill="${s.fill}"${s.stroke?` stroke="${s.stroke}" stroke-dasharray="4 3"`:''}/>`);
+      if(s.t&&x1-x0>60)p.push(`<text x="${f1((x0+x1)/2)}" y="${y+RH/2+4}" text-anchor="middle" class="${s.dark?'e-in-d':'e-in'}">${s.t}</text>`);});};
+  row(0,'Départ',`${eur0(F.cap0)} empruntés`,[{a:0,b:6,fill:RC.em50,stroke:RC.em300,t:'économies sans mensualité',dark:true},{a:6,b:F.pm,fill:RC.slate,t:`${F.k} × ${eur2s(F.m1)}`}]);
+  opts.forEach((o,i)=>row(i+1,o.lab,`${eur0(F.cap2)} après prime`,[{a:F.pm,b:F.pm+o.n,fill:o.color,t:`${o.n} mois × ${eur2s(o.m)}`}]));
+  const xp=px(F.pm);p.push(`<line x1="${f1(xp)}" y1="${T-14}" x2="${f1(xp)}" y2="${H-20}" stroke="${RC.amber}" stroke-width="1.6" stroke-dasharray="4 3"/><circle cx="${f1(xp)}" cy="${T-14}" r="4" fill="${RC.amber}"/><text x="${f1(xp+7)}" y="${T-10}" class="ax-em" fill="${RC.amber}">prime : capital réduit</text>`);
+  p.push('</svg>');return p.join('');}
+const eur0=v=>`${rE(v)}${NB}€`,eur2s=v=>`${rE(v,2)}${NB}€`;
 function gTreso(series,endYears){/* series : [{label,color,vals[21] (cumul en fin d'année, index 0 = installation)}] */
   const W=700,H=158,L=64,R=26,T=18,B=30;const all=series.flatMap(s=>s.vals);let mn=Math.min(0,...all),mx=Math.max(...all,1);const step=rStep((mx-mn)/4/1.1);mn=Math.floor(mn/step)*step;mx=Math.ceil(mx*1.08/step)*step;
   const px=i=>L+(W-L-R)*(i/20),py=v=>H-B-(H-B-T)*((v-mn)/(mx-mn));const p=[`<svg viewBox="0 0 ${W} ${H}" class="chart">`];
@@ -2423,6 +2459,7 @@ h1.cover em{font-style:normal;color:${C.em300}}
 .toc-t{font-size:7.8pt;letter-spacing:.22em;text-transform:uppercase;color:${C.faint};font-weight:700;margin-bottom:4mm}
 ol.toc{list-style:none;border-top:1px solid ${C.line}}
 ol.toc li{display:flex;align-items:baseline;gap:5mm;padding:2.2mm 0;border-bottom:1px solid #F1F5F9}
+ol.toc.dense li{padding:1.35mm 0}ol.toc.xdense li{padding:.9mm 0}.xdense+.meta{padding-top:3.5mm}ol.toc.dense li .t{font-size:9.2pt}ol.toc.dense li .d{font-size:8.4pt}
 ol.toc li b{flex:0 0 9mm;font-size:8.4pt;font-weight:700;color:${C.em600}}
 ol.toc li .t{flex:0 0 58mm;font-size:9.6pt;font-weight:650;color:${C.ink}}
 ol.toc li .d{flex:1;font-size:8.8pt;color:${C.muted}}
@@ -2462,7 +2499,7 @@ p{color:${C.slate};margin-bottom:3.2mm}p:last-child{margin-bottom:0}strong{font-
 .bb-lab{font-family:'Inter';font-size:11.5px;font-weight:700;fill:${C.ink}}.bb-sub{font-family:'Inter';font-size:9.5px;font-weight:500;fill:${C.faint}}
 .bb-val{font-family:'Inter';font-size:14px;font-weight:700;fill:#fff}.bb-eco{font-family:'Inter';font-size:11px;font-weight:700;fill:${C.em700}}
 .bb-rev{font-family:'Inter';font-size:11px;font-weight:600;fill:${C.slate}}
-.legend{display:flex;gap:6mm;flex-wrap:wrap;margin-top:2.5mm}.lg{display:flex;align-items:center;gap:5px;font-size:8pt;color:${C.muted};font-weight:500}
+.legend{display:flex;gap:2mm 5mm;flex-wrap:wrap;margin-top:2mm}.lg{display:flex;align-items:center;gap:5px;font-size:8pt;color:${C.muted};font-weight:500}
 .lg i{width:9px;height:9px;border-radius:3px;display:inline-block}.lg i.ln{height:3px;border-radius:2px;width:15px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:4.5mm}
 .st{border:1px solid ${C.line};border-radius:11px;padding:5mm 5mm 5.5mm;background:#fff;position:relative;overflow:hidden}
@@ -2497,11 +2534,26 @@ ul.checks li .ck{flex:0 0 20px;height:20px;border-radius:7px;background:${C.em70
 .shot{border:1px solid ${C.line};border-radius:12px;overflow:hidden;background:${C.alt}}
 .shot img{display:block;width:100%;height:62mm;object-fit:cover}.shots.one .shot img{height:86mm}
 .shot .cap{padding:2.6mm 4mm;font-size:8pt;font-weight:600;color:${C.muted};border-top:1px solid ${C.line};background:#fff}
-.opts{display:grid;grid-template-columns:1fr 1fr;gap:4.5mm}.opts.one{grid-template-columns:1fr}
-.opt{border:1px solid ${C.line};border-radius:12px;padding:5mm 5.5mm;background:#fff;position:relative;overflow:hidden}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:4.5mm}.opts.three{grid-template-columns:repeat(3,1fr);gap:4mm}
+.opt .osub{font-size:8pt;color:${C.muted};margin-top:.6mm;line-height:1.35;min-height:7mm}.opt .orow{display:flex;justify-content:space-between;gap:2mm;font-size:8.2pt;color:${C.slate};padding:.7mm 0;border-top:1px solid #F1F5F9;white-space:nowrap}
+.opt .orow b{font-weight:700;color:${C.ink}}.pill{display:inline-block;margin-top:1.8mm;padding:1mm 2.6mm;border-radius:20px;font-size:7.8pt;font-weight:700}.pill.ok{background:${C.em50};color:${C.em700}}.pill.ko{background:${C.amber100};color:#92400E}
+.stats.tight .st{padding:3.6mm 4.2mm 3.8mm}.stats.tight .st-v{font-size:14.5pt}.stats.tight .st-c{margin-top:1.2mm}
+.prod{border:1px solid ${C.line};border-radius:12px;overflow:hidden;background:#fff}
+.prod .ph{display:flex;justify-content:space-between;align-items:center;gap:6mm;padding:3.6mm 5mm;background:linear-gradient(140deg,#04281F,${C.em700});color:#fff}
+.prod .pb{font-size:7.4pt;letter-spacing:.2em;text-transform:uppercase;color:${C.em300};font-weight:700}.prod .pm{font-size:12.5pt;font-weight:700;margin-top:.6mm}
+.prod .pr{font-size:8pt;color:#CFF3E4;text-align:right;line-height:1.45}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid ${C.line};background:${C.alt}}
+.chip{padding:2.6mm 4mm;border-right:1px solid ${C.line}}.chip:last-child{border-right:none}.chip b{display:block;font-size:11pt;color:${C.em800};font-weight:700;white-space:nowrap}.chip span{font-size:7.4pt;color:${C.muted}}
+.fts{display:grid;grid-template-columns:1fr 1fr;gap:2.6mm 6mm;padding:3.6mm 5mm 4mm}
+.ft{display:flex;gap:2.6mm;align-items:flex-start}.ft .n{flex:0 0 16px;height:16px;border-radius:5px;background:${C.em700};color:#fff;font-size:7.4pt;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.ft .t{font-size:8.8pt;font-weight:700;color:${C.ink}}.ft .x{font-size:7.9pt;color:${C.muted};line-height:1.42;margin-top:.4mm}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:3.5mm}.stp{border:1px solid ${C.line};border-radius:11px;padding:2.8mm 3.4mm 3mm;background:#fff}
+.stp .n{display:inline-flex;width:18px;height:18px;border-radius:6px;background:${C.em700};color:#fff;font-size:8pt;font-weight:700;align-items:center;justify-content:center}
+.stp .t{font-size:9pt;font-weight:700;color:${C.ink};margin:1.2mm 0 .6mm}.stp .x{font-size:8pt;color:${C.muted};line-height:1.42}.opts.one{grid-template-columns:1fr}
+.opt{border:1px solid ${C.line};border-radius:12px;padding:4mm 4.6mm;background:#fff;position:relative;overflow:hidden}
 .opt::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c,${C.em500})}
 .opt .ot{font-size:7.6pt;letter-spacing:.16em;text-transform:uppercase;color:var(--c,${C.em700});font-weight:700}
-.opt .om{font-size:17pt;font-weight:700;letter-spacing:-.03em;color:${C.ink};margin-top:1.5mm;white-space:nowrap}.opt .om small{font-size:9pt;color:${C.muted};font-weight:600}
+.opt .om{font-size:15.5pt;font-weight:700;letter-spacing:-.03em;color:${C.ink};margin-top:1.5mm;white-space:nowrap}.opt .om small{font-size:9pt;color:${C.muted};font-weight:600}
 .opt .od{font-size:8.6pt;color:${C.muted};margin-top:1mm;line-height:1.4}
 `;}
 
@@ -2527,7 +2579,7 @@ function repData(){const R=compute(),K=CAL&&CAL.hasRoof?CAL:null,cli=S.client,ag
   return{R,K,cli,ag,rep,wp,P,nMod,prod,conso,auto,battOut,surplus,reseau,autonomie,txAuto,mens,sav20,sell20,ann,cum,total20:cum[19],gainNet20:R.gain20,
     factM:S.bill,newM:R.newBill,ecoM:S.bill-R.newBill,revM:R.sellYr1/12,cost:R.cost,prime:R.prime,net:R.cost-R.prime,roi:R.payback,avgM:R.avgMonth,pay,F,opt:S.finOpt||'both'};}
 
-function buildReport(){const d=repData(),R=d.R,C=RC,cli=d.cli,ag=d.ag;
+function buildReport(opts){opts=opts||{};const fiches=opts.fiches||[];const d=repData(),R=d.R,C=RC,cli=d.cli,ag=d.ag;
   const civNom=[cli.civ,cli.prenom,(cli.nom||'').toUpperCase()].filter(Boolean).join(' ')||'Client';
   const shortNom=((cli.nom||'').toUpperCase())||'CLIENT';
   const date=dateFr(cli.date||todayISO()),com=getCom();
@@ -2571,6 +2623,31 @@ function buildReport(){const d=repData(),R=d.R,C=RC,cli=d.cli,ag=d.ag;
     <div class="spacer"></div>
     <div class="note" style="margin-bottom:6mm">Implantation étudiée à partir des vues aériennes de votre toiture ; production estimée ${srcProd}. Implantation définitive confirmée lors de la visite technique.</div>
   </div>${footer(pg)}</section>`]);
+
+  /* --- 1 bis. la batterie --- */
+  if(batt){const sim=daySim(),full=R.useful*R.eta,night=R.nightLoad,perNight=R.battOut,pctNight=night?Math.min(100,perNight/night*100):0,ecoBatt=R.battOut*365*S.price;
+    const eqRows=[];if(R.eqW>0)eqRows.push({label:'Vos appareils essentiels',sub:`${rE(R.eqW)} W cochés dans l'étude`,h:full/(R.eqW/1000),color:RC.em600});
+    eqRows.push({label:'Réfrigérateur, box et éclairage',sub:'environ 135 W',h:full/0.135,color:RC.em500});eqRows.push({label:'Réfrigérateur seul',sub:'environ 60 W',h:full/0.06,color:RC.em400});
+    sections.push(['Votre batterie','Le soleil le soir et la nuit, et une sécurité en cas de coupure',(s,pg)=>`<section class="page"><div class="pad">
+      ${head(s,'Votre batterie')}${kick('Stockage 8 kWh')}
+      <h2>Votre soleil, même la nuit</h2>
+      <p class="lead">En journée, vos panneaux produisent plus que la maison ne consomme. La <strong>batterie de 8 kWh</strong> met ce surplus en réserve (${rD(R.useful,1)} kWh utiles)
+        et vous le rend <strong>le soir et la nuit</strong> : chaque kWh restitué est un kWh que vous n'achetez plus au réseau. Et si le réseau est coupé, elle prend le relais pour vos appareils essentiels.</p>
+      <div class="steps" style="margin-top:3mm">
+        <div class="stp"><span class="n">1</span><div class="t">La journée</div><div class="x">Les panneaux alimentent d'abord la maison.</div></div>
+        <div class="stp"><span class="n">2</span><div class="t">La recharge</div><div class="x">Le surplus remplit la batterie, puis il est revendu.</div></div>
+        <div class="stp"><span class="n">3</span><div class="t">Le soir et la nuit</div><div class="x">La batterie alimente la maison à la place du réseau.</div></div>
+        <div class="stp"><span class="n">4</span><div class="t">Les coupures</div><div class="x">Elle maintient vos appareils essentiels.</div></div></div>
+      <div class="chartcard" style="margin-top:3.5mm;padding:4.5mm 5.5mm 3mm"><div class="ct">Une journée type avec votre batterie</div><div class="cs">Puissance en kW, de 6 h du matin au lendemain 6 h (journée moyenne de l'année).</div>
+        ${gDay(sim)}${gLegend([[C.em600,'Solaire consommé'],[C.em300,'Recharge'],[C.em500,'Batterie'],['#CBD5E1','Réseau'],[C.amber,'Production','line'],[C.slate,'Consommation','line']])}</div>
+      <div class="stats tight" style="margin-top:3.5mm">
+        ${stat(rD(perNight,1)+NB+'kWh','Restitués en moyenne chaque soir et nuit',`${rE(d.battOut)} kWh par an`)}
+        ${stat(rD(Math.round(pctNight),0)+NB+'%','De vos besoins de la nuit couverts','par la batterie')}
+        ${stat(eur(ecoBatt),'Économisés grâce à la batterie','la 1<sup>re</sup> année','amber')}</div>
+      <div class="chartcard" style="margin-top:3.5mm;padding:4.5mm 5.5mm 3mm"><div class="ct">En cas de coupure du réseau</div><div class="cs">Durée pendant laquelle une batterie pleine (${rD(full,1)} kWh disponibles) alimente vos appareils.</div>${gOutage(eqRows)}</div>
+      <div class="spacer"></div>
+      <div class="note" style="margin-bottom:5mm">Durées indicatives, batterie pleine, selon les appareils allumés. La fonction secours alimente les appareils raccordés au circuit de secours, défini lors de la visite technique (hors recharge de véhicule électrique).</div>
+    </div>${footer(pg)}</section>`]);}
 
   /* --- 2. votre énergie --- */
   sections.push(['Votre énergie','Ce que produisent vos panneaux, ce que consomme votre foyer',(s,pg)=>`<section class="page"><div class="pad">
@@ -2617,7 +2694,7 @@ function buildReport(){const d=repData(),R=d.R,C=RC,cli=d.cli,ag=d.ag;
       <table class="tbl"><tr><th>Année</th><th>Gain de l'année</th><th>Cumul</th><th>Après prix</th></tr>${mile}</table>
       <div class="callout"><div class="c-l">Sur 20 ans</div>
         <div class="c-fig" style="border-top:none;padding-top:0;margin-top:0"><div><div class="n">${eur(d.total20)}</div><div class="c">${hasRev?'Économies, revente et prime':'Économies et prime'}</div></div></div>
-        <div class="c-fig"><div><div class="n">${eur(d.gainNet20)}</div><div class="c">Gain net après prix de l'installation</div></div></div></div>
+        ${d.pay==='credit'?`<p style="margin-top:4mm">dont ${eur(d.sav20)} d'économies sur vos factures${hasRev?`, ${eur(d.sell20)} de revente`:''} et ${eur(d.prime)} de prime.</p>`:`<div class="c-fig"><div><div class="n">${eur(d.gainNet20)}</div><div class="c">Gain net après prix de l'installation</div></div></div>`}</div>
     </div>
     <div class="spacer"></div>
     <div class="note" style="margin-bottom:6mm">Projection tenant compte d'un vieillissement des panneaux de ${rD(S.deg,1)}${NB}% par an. Colonne « après prix » : cumul diminué du prix de l'installation (${eur(d.cost)}). Projections indicatives et non contractuelles${d.pay==='credit'?', hors coût du crédit':''}.</div>
@@ -2631,24 +2708,28 @@ function buildReport(){const d=repData(),R=d.R,C=RC,cli=d.cli,ag=d.ag;
     const optCard=(t,n,m,col)=>`<div class="opt" style="--c:${col}"><div class="ot">${t}</div><div class="om">${eur2(m)}<small> / mois</small></div>
       <div class="od">pendant ${n} mois, à partir du ${dateFrD(F.debut2)}<br>dernière mensualité en ${MOIS[addMonths(F.debut2,n-1).getMonth()]} ${addMonths(F.debut2,n-1).getFullYear()}<br>${m<=d.avgM?`<b style="color:${C.em700}">couverte par vos économies (${eur(d.avgM)}/mois)</b>`:`effort de ${eur(m-d.avgM)} par mois`}</div></div>`;
     const nOpt=(showA?1:0)+(showB?1:0);
-    sections.push(['Le financement','Votre crédit et son effet sur votre budget',(s,pg)=>`<section class="page"><div class="pad">
-      ${head(s,'Le financement')}${kick('Votre crédit')}
-      <h2>${covered?'Vos économies financent votre installation':'Financer votre installation avec un effort mesuré'}</h2>
-      <p class="lead">Le crédit de <strong>${eur(F.cap0)}</strong> démarre <strong>6 mois après l'installation</strong> (1<sup>re</sup> mensualité le ${dateFrD(F.debut)}) : pendant ces 6 mois, vous profitez déjà de vos économies.
-        La prime de ${eur(d.prime)}, attendue au début de la ${R.primeYear}<sup>e</sup> année (${MOIS[F.primeDate.getMonth()]} ${F.primeDate.getFullYear()}), arrive après ${F.k} mensualités de ${eur2(F.m1)} : elle vient réduire le capital restant dû, qui passe de ${eur(F.crd12)} à <strong>${eur(F.cap2)}</strong>.</p>
-      <div class="grid2" style="margin-top:2mm;align-items:stretch">
-        <div class="eqbox" style="padding:4mm 6mm"><div class="eq">
-          <div class="l"><span>Économies + revente par mois<br><span style="font-size:8pt;color:${C.muted}">moyenne sur 20 ans</span></span><span class="n">${eur(d.avgM)}</span></div>
-          <div class="l"><span>Mensualité avant la prime (${F.k} mois)</span><span class="n">–${NB}${eur2(F.m1)}</span></div>
-          <div class="sep"></div>
-          <div class="tot"><span class="lab">${solde1>=0?'Reste en votre faveur':'Effort par mois'}<br><span style="font-weight:500;font-size:8pt;color:${C.muted}">avant la prime</span></span><span class="n${solde1>=0?'':' neg'}">${solde1>=0?'+':'–'}${NB}${eur(Math.abs(solde1))}</span></div></div></div>
-        <div class="callout" style="padding:4mm 6mm"><div class="c-l">Le principe</div>
-          <div class="c-big">${covered?'Vos économies remboursent votre installation':'L\'essentiel de la mensualité payé par vos économies'}</div>
-          <p>Pas d'épargne à mobiliser : la mensualité est comparée à ce que l'installation vous fait économiser et gagner chaque mois.</p></div>
-      </div>
-      <div class="toc-t" style="margin-top:5mm;margin-bottom:3mm">${nOpt>1?'Après la prime, deux possibilités':'Après la prime'}</div>
-      <div class="opts${nOpt>1?'':' one'}">${showA?optCard(nOpt>1?'Option 1 — durée plus courte':(same?'Votre mensualité après la prime':'Durée plus courte'),F.s2a,F.m2a,C.em600):''}${showB?optCard(nOpt>1?'Option 2 — mensualité allégée':'Mensualité allégée',F.s2b,F.m2b,C.amber):''}</div>
-      <div class="chartcard" style="margin-top:4mm"><div class="ct">Votre budget cumulé</div><div class="cs">Économies et revente cumulées, moins les mensualités du crédit${nOpt>1?' — option 1 en trait plein, option 2 en pointillés':''}.</div>${gTreso(series,ends)}</div>
+    const pill=m=>m<=d.avgM?`<span class="pill ok">couverte par vos économies (${eur(d.avgM)}/mois)</span>`:`<span class="pill ko">effort de ${eur(m-d.avgM)} par mois</span>`;
+    const lastM=n=>my(addMonths(F.debut2,n-1));
+    const MC=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'],my=x=>`${MC[x.getMonth()]} ${x.getFullYear()}`;
+    const scCard=(t,sub,cap,n,m,period,col,extra)=>`<div class="opt" style="--c:${col}"><div class="ot">${t}</div><div class="osub">${sub}</div><div class="om">${eur2(m)}<small> / mois</small></div>
+      <div class="orow" style="margin-top:2mm"><span>Capital</span><b>${eur(cap)}</b></div><div class="orow"><span>Durée</span><b>${n} mois</b></div><div class="orow"><span>Période</span><b>${period}</b></div>${extra||''}</div>`;
+    const cards=[scCard('Départ',`Crédit sur ${F.n1} mois, jusqu'à la prime`,F.cap0,F.k,F.m1,`${my(F.debut)} → ${my(addMonths(F.debut,F.k-1))}`,C.slate,'')];
+    if(showA)cards.push(scCard(nOpt>1?'Scénario 1':(same?'Après la prime':'Durée plus courte'),nOpt>1?'Durée plus courte : vous remboursez plus vite':'Après le versement de la prime',F.cap2,F.s2a,F.m2a,`${my(F.debut2)} → ${lastM(F.s2a)}`,C.em600,pill(F.m2a)));
+    if(showB)cards.push(scCard(nOpt>1?'Scénario 2':'Mensualité allégée',nOpt>1?'Mensualité allégée : même durée, mensualité réduite':'Après le versement de la prime',F.cap2,F.s2b,F.m2b,`${my(F.debut2)} → ${lastM(F.s2b)}`,C.amber,pill(F.m2b)));
+    const tl=[];if(showA)tl.push({lab:nOpt>1?'Scénario 1':'Après la prime',n:F.s2a,m:F.m2a,color:C.em600});if(showB)tl.push({lab:nOpt>1?'Scénario 2':'Après la prime',n:F.s2b,m:F.m2b,color:C.amber});
+    sections.push(['Le financement','Vos scénarios de financement',(s,pg)=>`<section class="page"><div class="pad">
+      ${head(s,'Le financement')}${kick('Vos scénarios de crédit')}
+      <h2>Vos scénarios de financement</h2>
+      <p class="lead">Le crédit de <strong>${eur(F.cap0)}</strong> démarre <strong>6 mois après l'installation</strong>. Au début de la ${R.primeYear}<sup>e</sup> année, la prime de ${eur(d.prime)} réduit le capital restant dû
+        à <strong>${eur(F.cap2)}</strong>${nOpt>1?' : vous choisissez alors de rembourser plus vite ou d\'alléger votre mensualité':''}.</p>
+      <div class="opts three" style="margin-top:2mm${cards.length<3?';grid-template-columns:repeat(2,1fr)':''}">${cards.join('')}</div>
+      <div class="chartcard" style="margin-top:3.5mm;padding:4mm 5.5mm 2mm"><div class="ct" style="margin-bottom:2mm">Le déroulement de votre crédit</div>${gTimeline(F,tl)}</div>
+      <div class="callout" style="margin-top:3.5mm;padding:4.5mm 6.5mm"><div class="c-l">Le principe</div>
+        <div class="c-big" style="font-size:13.5pt">${covered?'Vos économies remboursent votre installation':'L\'essentiel de la mensualité payé par vos économies'}</div>
+        <p>Pas d'épargne à mobiliser : ce que l'installation vous fait économiser et gagner chaque mois paie la mensualité.</p>
+        <div class="c-fig" style="margin-top:3mm;padding-top:3mm"><div><div class="n">${eur(d.avgM)}</div><div class="c">économies + revente par mois<br>(moyenne sur 20 ans)</div></div>
+          <div><div class="n">${eur2(F.m1)}</div><div class="c">mensualité de départ<br>(${F.k} mois)</div></div>
+          <div><div class="n">${eur2(mBest)}</div><div class="c">mensualité après la prime<br>${nOpt>1?'(scénario le plus léger)':''}</div></div></div></div>
       <div class="spacer"></div>
       <div class="note" style="margin-bottom:5mm;font-size:7.6pt;line-height:1.45">${PRIME_RESERVE} Mensualités issues de la grille de notre partenaire financier à la date de l'étude${S.rs?' (prix avec remise)':''}, hors assurance facultative. Crédit terminé avant les 81 ans de l'emprunteur. Sous réserve d'acceptation du dossier par l'organisme prêteur. Un crédit vous engage et doit être remboursé : vérifiez vos capacités de remboursement avant de vous engager.</div>
     </div>${footer(pg)}</section>`]);}
@@ -2656,18 +2737,20 @@ function buildReport(){const d=repData(),R=d.R,C=RC,cli=d.cli,ag=d.ag;
   /* --- synthèse --- */
   const items=[['Produire votre propre électricité.',`${rD(Math.round(d.autonomie),0)}${NB}% de votre consommation couverte par vos panneaux${batt?' et votre batterie':''}, soit ${rE(d.auto)} kWh par an qui échappent aux hausses de tarif.`],
     ['Alléger votre facture tout de suite.',`${eur(d.factM)} par mois ramenés à ${eur(d.newM)} + abonnement${hasRev?`, plus ${eur(d.revM)} de revente`:''} : ${eur(d.ecoM+d.revM)} de gain par mois dès la première année.`]];
+  const backupH=R.nom&&R.eqW>0?R.useful*R.eta/(R.eqW/1000):null;
+  if(batt)items.push(['Profiter du soleil la nuit et pendant les coupures.',`Votre batterie de 8 kWh stocke le surplus de la journée et vous le restitue le soir et la nuit (${rE(d.battOut)} kWh par an)${backupH?` ; en cas de coupure du réseau, elle alimente vos appareils essentiels pendant environ ${rD(backupH,backupH<10?1:0)} heures`:' ; en cas de coupure du réseau, elle alimente vos appareils essentiels'}.`]);
   if(d.F){const F=d.F,mm=Math.min(...[F.s2a?F.m2a:Infinity,F.s2b?F.m2b:Infinity]);items.push(['Financer sans toucher à votre épargne.',`Le crédit démarre 6 mois après l'installation ; une fois la prime versée (au plus tôt un an après le raccordement), la mensualité descend à ${eur2(mm)}, à comparer à ${eur(d.avgM)} d'économies et de revente par mois en moyenne.`]);}
   else items.push(['Un investissement rentabilisé.',`${roiTxt} ans de retour sur investissement pour un coût réel de ${eur(d.net)} après prime, puis ${eur(d.gainNet20)} de gain net estimé sur 20 ans.`]);
   const lis=items.map(([t,x],i)=>`<li><span class="ck">${i+1}</span><div><strong>${t}</strong> ${x}</div></li>`).join('');
   sections.push(['Synthèse','Ce que votre installation change pour votre foyer',(s,pg)=>`<section class="page"><div class="pad">
     ${head(s,'Synthèse')}${kick('En résumé')}
-    <h2>Trois bonnes raisons de passer au solaire</h2>
-    <ul class="checks" style="margin-top:5mm">${lis}</ul>
-    <div class="stats" style="margin-top:6mm">
+    <h2>${items.length===4?'Quatre':'Trois'} bonnes raisons de passer au solaire</h2>
+    <ul class="checks" style="margin-top:${items.length>3?3.5:5}mm;gap:${items.length>3?3:4}mm">${lis}</ul>
+    <div class="stats" style="margin-top:${items.length>3?4.5:6}mm">
       ${stat(eur(d.total20),hasRev?'Économies, revente et prime':'Économies et prime','cumulées sur 20 ans')}
       ${stat(eur(d.gainNet20),'Gain net estimé','après prix de l\'installation')}
       ${stat(rD(S.infl,1)+NB+'%','Hausse annuelle du prix de l\'électricité','hypothèse retenue','slate')}</div>
-    <div class="callout" style="margin-top:6mm"><div class="c-l">Votre conseiller</div>
+    <div class="callout" style="margin-top:${items.length>3?4:6}mm;${items.length>3?"padding:4.5mm 7mm":""}"><div class="c-l">Votre conseiller</div>
       <p style="font-size:9.8pt">${com?`<strong style="color:#fff">${rH(com)}</strong> reste`:'Votre conseiller reste'} à votre disposition pour vous présenter cette étude, répondre à vos questions et organiser la visite technique de votre toiture.</p></div>
     <div class="spacer"></div>
     <div style="margin-bottom:6mm"><div class="toc-t" style="margin-bottom:3.5mm">Rappel des hypothèses</div>
@@ -2686,8 +2769,47 @@ function buildReport(){const d=repData(),R=d.R,C=RC,cli=d.cli,ag=d.ag;
       <div style="margin-top:4mm;font-size:8pt;color:${C.faint};line-height:1.5">Les montants et projections présentés sont des estimations établies à partir des informations que vous nous avez communiquées et des hypothèses retenues (production, consommation, tarifs, prime${d.F?', conditions de financement':''}). Ils ne constituent ni un devis, ni un engagement contractuel, ni un conseil financier.</div></div>
   </div>${footer(pg)}</section>`]);
 
+  /* --- le matériel --- */
+  {const feat=(n,ti,x)=>`<div class="ft"><span class="n">${n}</span><div><div class="t">${ti}</div><div class="x">${x}</div></div></div>`;
+   const chip=(v,c)=>`<div class="chip"><b>${v}</b><span>${c}</span></div>`;
+   const panel=`<div class="prod">
+      <div class="ph"><div><div class="pb">Thomson Energy</div><div class="pm">ATON 500${NB}Wc — Full Black</div></div><div class="pr">Réf. THO500ATONFB<br>${d.nMod} panneaux sur votre toit</div></div>
+      <div class="chips">${chip('500'+NB+'Wc','puissance nominale')}${chip('20,83'+NB+'%','efficacité de conversion')}${chip('2'+NB+'400 / 5'+NB+'400'+NB+'Pa','charges de vent / de neige')}${chip('Monocristallin','demi-cellules HC')}</div>
+      <div class="fts">
+        ${feat(1,'Demi-cellules monocristallines, Full Black','Les cellules sont coupées en deux : moins de pertes électriques dans le module, et un panneau entièrement noir, discret sur votre toiture.')}
+        ${feat(2,'Une efficacité élevée','Jusqu\'à 20,83 % de la lumière reçue convertie en électricité, grâce aux demi-cellules et à la technologie multibusbar (MBB) : plus de production sur la même surface.')}
+        ${feat(3,'Un cadre aluminium robuste','Conçu pour résister à des charges de vent jusqu\'à 2 400 Pa et de neige jusqu\'à 5 400 Pa : un module durable, y compris en conditions climatiques difficiles.')}
+        ${feat(4,'Performant à la chaleur','Un faible coefficient de température : le rendement baisse peu par forte chaleur et reste bon par faible luminosité, pour une production stable et fiable.')}
+      </div></div>`;
+   const hione=batt?`<div class="prod" style="margin-top:4mm">
+      <div class="ph"><div><div class="pb">Hoymiles</div><div class="pm">HiOne — onduleur et batterie tout-en-un</div></div><div class="pr">Stockage 8 kWh<br>évolutif jusqu'à 64 kWh</div></div>
+      <div class="chips">${chip('98,5'+NB+'%','efficacité maximale')}${chip('0'+NB+'ms','bascule en cas de coupure')}${chip('8 → 64'+NB+'kWh','capacité évolutive')}${chip('–20'+NB+'%','d\'encombrement')}</div>
+      <div class="fts">
+        ${feat(1,'Tout-en-un','Onduleur, batterie et système de gestion de l\'énergie (EMS) réunis dans un seul boîtier compact : 20 % d\'encombrement en moins et une installation plus simple et plus propre.')}
+        ${feat(2,'Haute performance','Jusqu\'à 98,5 % d\'efficacité, et une gestion intelligente des panneaux posés sur des pans d\'orientations différentes.')}
+        ${feat(3,'Alimentation sans coupure','Bascule de secours en 0 milliseconde : en cas de panne du réseau, le système prend le relais instantanément, sans interruption pour vos appareils secourus.')}
+        ${feat(4,'Évolutif','La capacité de stockage peut passer de 8 kWh à 64 kWh par pile, en ajoutant des modules si vos besoins augmentent.')}
+        ${feat(5,'Intelligence artificielle','Le mode IA intégré optimise automatiquement les cycles de charge et de décharge, notamment en fonction des tarifs de l\'électricité lorsqu\'ils varient.')}
+      </div></div>`:`<div class="prod" style="margin-top:4mm">
+      <div class="ph"><div><div class="pb">Hoymiles</div><div class="pm">HMS-1000 — micro-onduleur 2 en 1</div></div><div class="pr">${Math.ceil(d.nMod/2)} micro-onduleurs<br>pour ${d.nMod} panneaux</div></div>
+      <div class="chips">${chip('1'+NB+'000'+NB+'VA','puissance de sortie')}${chip('2 panneaux','par micro-onduleur')}${chip('MPPT','indépendant par panneau')}${chip('Sub-1G','communication sans fil')}</div>
+      <div class="fts">
+        ${feat(1,'Chaque panneau optimisé','Une fonction MPPT et une surveillance indépendantes pour chaque panneau : un panneau à l\'ombre ne pénalise pas les autres.')}
+        ${feat(2,'2 en 1, installation simplifiée','Chaque micro-onduleur relie 2 panneaux : moins de matériel sur le toit et une maintenance facilitée.')}
+        ${feat(3,'Sécurité','Transformateur isolé et arrêt rapide pour la sécurité des installations en toiture.')}
+        ${feat(4,'Suivi à distance','Communication sans fil Sub-1G stable avec la passerelle DTU de Hoymiles.')}
+      </div></div>`;
+   sections.push(['Votre matériel',batt?'Panneaux Thomson ATON et système Hoymiles HiOne':'Panneaux Thomson ATON et micro-onduleurs Hoymiles',(s,pg)=>`<section class="page"><div class="pad">
+      ${head(s,'Votre matériel')}${kick('Matériel sélectionné')}
+      <h2>${batt?'Un matériel performant, du toit à la batterie':'Un matériel performant et durable'}</h2>
+      <p class="lead" style="font-size:10pt">Votre installation utilise ${batt?'des panneaux Thomson Energy ATON et le système Hoymiles HiOne, qui réunit l\'onduleur, la batterie et la gestion de l\'énergie':'des panneaux Thomson Energy ATON de 500 Wc, raccordés à des micro-onduleurs Hoymiles HMS-1000'}.</p>
+      ${panel}${hione}
+      <div class="spacer"></div>
+      <div class="note" style="margin-bottom:5mm">Caractéristiques communiquées par les fabricants${fiches.length?' : leurs fiches techniques sont jointes en fin de document':''}. Le matériel définitivement installé est confirmé au devis.</div>
+    </div>${footer(pg)}</section>`]);}
+
   /* --- couverture --- */
-  const toc=sections.map(([t,ds],i)=>`<li><b>${String(i+1).padStart(2,'0')}</b><span class="t">${t}</span><span class="d">${ds}</span></li>`).join('');
+  const toc=sections.map(([t,ds],i)=>`<li><b>${String(i+1).padStart(2,'0')}</b><span class="t">${t}</span><span class="d">${ds}</span></li>`).join('')+(fiches.length?`<li><b>${String(sections.length+1).padStart(2,'0')}</b><span class="t">Fiches techniques</span><span class="d">${fiches.length>2?'Panneau, onduleur et batterie : documents des fabricants':fiches.length>1?'Panneau et micro-onduleur : documents des fabricants':'Panneau Thomson ATON 500 Wc : document du fabricant'}</span></li>`:'');const nToc=sections.length+(fiches.length?1:0);
   const body=sections.map(([,,fn],i)=>fn(String(i+1).padStart(2,'0'),String(i+2).padStart(2,'0'))).join('');
   const sub=`Autoconsommation${batt?' avec batterie 8 kWh':''}${hasRev?' et revente du surplus':''} — ${d.nMod} panneaux de ${d.wp}${NB}Wc, ${rE(d.prod)} kWh produits par an.`;
   const p1=`<section class="page"><div class="cover-top">${sunMotif()}<div class="cover-in">
@@ -2702,8 +2824,8 @@ function buildReport(){const d=repData(),R=d.R,C=RC,cli=d.cli,ag=d.ag;
       ${kpi(rE(d.newM),NB+'€/mois','Nouvelle facture, + abonnement')}
       ${kpi(roiTxt,' ans','Retour sur investissement')}
       ${kpi(rE(d.gainNet20),NB+'€','Gain net estimé sur 20 ans')}</div>
-    <div class="cover-bot" style="padding-top:${Math.max(8,20-Math.max(0,sections.length-6)*6)}mm">
-      <div class="toc-t">Au sommaire</div><ol class="toc">${toc}</ol>
+    <div class="cover-bot" style="padding-top:${nToc>8?21.5:nToc>6?23:20}mm;padding-bottom:${nToc>8?5:nToc>6?9:12}mm">
+      <div class="toc-t">Au sommaire</div><ol class="toc${nToc>6?' dense':''}${nToc>8?' xdense':''}">${toc}</ol>
       <dl class="meta">
         <div><dt>Étude réalisée par</dt><dd>${rH(com||ag.nom)}<small>${rH(com?ag.nom:ag.adresse)}${ag.tel?' · '+rH(ag.tel):''}</small></dd></div>
         <div><dt>Territoire</dt><dd>${rH(tName(S.terr))}<small>Installation de ${d.P}${NB}kWc${batt?' avec batterie':''}</small></dd></div>
@@ -2736,8 +2858,12 @@ let repDoc=null;
 function repFileName(){const c=S.client,R=compute();const parts=["Rapport d'etude",(c.civ||'').replace(/\./g,''),c.nom,c.prenom,R.P+'kWc'+(R.nom>0?' batterie':'')].map(s=>String(s||'').trim()).filter(Boolean);
   /* nom de fichier sans accents ni caractères spéciaux : accepté partout (Windows, Mac, messageries) */
   return parts.join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’‘]/g,"'").replace(/[^A-Za-z0-9' .,_()-]+/g,'-').replace(/\s+/g,' ')+'.pdf';}
-const LIBS={h2c:'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',pdf:'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'};
-function loadScript(src){return new Promise((ok,ko)=>{if(document.querySelector(`script[src="${src}"]`)&&(src===LIBS.h2c?window.html2canvas:window.jspdf))return ok();const s=document.createElement('script');s.src=src;s.onload=()=>ok();s.onerror=()=>ko(new Error('script'));document.head.appendChild(s);});}
+const LIBS={h2c:'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',pdf:'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',pdflib:'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js'};
+/* fiches techniques des fabricants : fichiers PDF du dossier « fiches » du site, ajoutés à la fin du rapport */
+const FICHES=[{f:'fiches/panneau-thomson-aton-500.pdf',lab:'panneau Thomson ATON 500 Wc',batt:false},{f:'fiches/hoymiles-hione-onduleur.pdf',lab:'onduleur Hoymiles HiOne',batt:true},{f:'fiches/hoymiles-hione-batterie.pdf',lab:'batterie Hoymiles HiOne 8 kWh',batt:true},{f:'fiches/hoymiles-hms-1000.pdf',lab:'micro-onduleur Hoymiles HMS-1000',nobatt:true}];
+async function loadFiches(){const batt=compute().nom>0,out=[];if(location.protocol==='file:')return out;
+  for(const x of FICHES){if(x.batt&&!batt)continue;if(x.nobatt&&batt)continue;try{const r=await fetch(x.f,{cache:'no-store'});if(!r.ok)continue;const b=await r.arrayBuffer();if(b.byteLength>1000)out.push({lab:x.lab,buf:b});}catch(e){}}return out;}
+const LOADED={};function loadScript(src){return new Promise((ok,ko)=>{if(LOADED[src])return ok();const done=()=>{LOADED[src]=1;ok();};const s=document.createElement('script');s.src=src;s.onload=done;s.onerror=()=>ko(new Error('script'));document.head.appendChild(s);});}
 /* les graphiques SVG sont rendus comme des images : on y recopie les styles calculés (sinon ils perdent tailles, couleurs et polices) */
 const GF_SVG='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=block';let svgFontCache=null;
 /* police Inter intégrée dans chaque graphique (une image SVG n'a pas accès aux polices de la page) */
@@ -2761,7 +2887,7 @@ async function rasterSvgs(doc){const W=doc.defaultView;const svgs=[...doc.queryS
 let pdfBusy=false;
 async function makePdf(btn){if(pdfBusy)return;pdfBusy=true;const lab=btn?btn.textContent:'';const setLab=s=>{if(btn)btn.textContent=s;};
   try{setLab('Préparation…');await loadScript(LIBS.pdf);
-    const r=buildReport(),name=repFileName();const fr=document.createElement('iframe');fr.setAttribute('aria-hidden','true');fr.style.cssText='position:fixed;left:-12000px;top:0;width:820px;height:1200px;border:0;opacity:0;pointer-events:none';
+    const fiches=await loadFiches();const r=buildReport({fiches:fiches.map(x=>x.lab)}),name=repFileName();const fr=document.createElement('iframe');fr.setAttribute('aria-hidden','true');fr.style.cssText='position:fixed;left:-12000px;top:0;width:820px;height:1200px;border:0;opacity:0;pointer-events:none';
     document.body.appendChild(fr);await new Promise(ok=>{fr.onload=ok;fr.srcdoc=r.html.replace(/\u202f/g,'\u00a0');});const doc=fr.contentDocument;
     doc.body.classList.add('render');const st=doc.createElement('style');st.textContent='.render,.render *{font-feature-settings:normal!important;font-variant-numeric:normal!important}.render{background:#fff!important}.render .page{margin:0!important;box-shadow:none!important}.render .brand,.render .kpi{box-shadow:none!important}.render .brand img{position:relative;z-index:3}.render h1,.render h2,.render .kpi-v,.render .st-v,.render .specs .v,.render .eq .n,.render .opt .om,.render .callout .c-big,.render .callout .c-fig .n{letter-spacing:0!important}';doc.head.appendChild(st);
     try{await doc.fonts.ready;}catch(e){}await Promise.all([...doc.images].map(im=>im.decode?im.decode().catch(()=>{}):null));await new Promise(ok=>setTimeout(ok,250));
@@ -2773,7 +2899,11 @@ async function makePdf(btn){if(pdfBusy)return;pdfBusy=true;const lab=btn?btn.tex
       const cv=await fr.contentWindow.html2canvas(pages[i],{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false,windowWidth:820});
       if(i)pdf.addPage();pdf.addImage(cv.toDataURL('image/jpeg',0.9),'JPEG',0,0,210,297,undefined,'FAST');}
     pdf.setProperties({title:name.replace(/\.pdf$/,''),author:agenceOf(S.terr).nom,subject:'Étude photovoltaïque'});
-    const blob=pdf.output('blob');const url=URL.createObjectURL(blob);const lk=document.createElement('a');lk.href=url;lk.download=name;lk.rel='noopener';document.body.appendChild(lk);lk.click();lk.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);fr.remove();toast('Rapport téléchargé : '+name);$('rFile').textContent='Dernier rapport : '+name+' (dossier Téléchargements)';}
+    let blob=pdf.output('blob');
+    if(fiches.length){try{setLab('Ajout des fiches techniques…');await loadScript(LIBS.pdflib);const {PDFDocument}=window.PDFLib;const doc2=await PDFDocument.load(pdf.output('arraybuffer'));
+      for(const fi of fiches){try{const src=await PDFDocument.load(fi.buf,{ignoreEncryption:true});const pgs=await doc2.copyPages(src,src.getPageIndices());pgs.forEach(p=>doc2.addPage(p));}catch(e){console.warn('fiche',fi.lab,e);}}
+      blob=new Blob([await doc2.save()],{type:'application/pdf'});}catch(e){console.warn(e);toast('Fiches techniques non ajoutées');}}
+    const url=URL.createObjectURL(blob);const lk=document.createElement('a');lk.href=url;lk.download=name;lk.rel='noopener';document.body.appendChild(lk);lk.click();lk.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);fr.remove();toast('Rapport téléchargé : '+name);$('rFile').textContent='Dernier rapport : '+name+' (dossier Téléchargements)';}
   catch(e){console.error(e);toast('Création du PDF impossible (connexion internet requise la première fois).');}
   finally{pdfBusy=false;setLab(lab);}}
 $('rGo').addEventListener('click',()=>makePdf($('rGo')));
