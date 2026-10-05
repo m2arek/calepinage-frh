@@ -2851,6 +2851,7 @@ function repChecks(){const d=repData(),out=[];const cli=S.client;
 function renderRep(){document.querySelectorAll('#rPay button').forEach(b=>b.classList.toggle('on',b.dataset.v===(S.payMode==='credit'?'credit':'cash')));
   document.querySelectorAll('#rOpt button').forEach(b=>b.classList.toggle('on',b.dataset.v===(S.finOpt||'both')));$('rOptBox').hidden=S.payMode!=='credit';
   const ch=repChecks();$('rChecks').innerHTML=ch.map(([k,t])=>`<li class="rc ${k}"><span class="rci">${k==='ok'?'✓':k==='bad'?'!':'•'}</span><span>${t}</span></li>`).join('');
+  checkFiches();
   const bad=ch.some(c=>c[0]==='bad');$('rGo').disabled=false;$('rGoInfo').textContent=bad?'Des informations manquent : le rapport peut être créé, mais vérifiez les points marqués « ! ».':'';}
 $('rPay').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.payMode=b.dataset.v;save();renderRep();});
 $('rOpt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.finOpt=b.dataset.v;save();renderRep();});
@@ -2861,8 +2862,16 @@ function repFileName(){const c=S.client,R=compute();const parts=["Rapport d'etud
 const LIBS={h2c:'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',pdf:'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',pdflib:'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js'};
 /* fiches techniques des fabricants : fichiers PDF du dossier « fiches » du site, ajoutés à la fin du rapport */
 const FICHES=[{f:'fiches/panneau-thomson-aton-500.pdf',lab:'panneau Thomson ATON 500 Wc',batt:false},{f:'fiches/hoymiles-hione-onduleur.pdf',lab:'onduleur Hoymiles HiOne',batt:true},{f:'fiches/hoymiles-hione-batterie.pdf',lab:'batterie Hoymiles HiOne 8 kWh',batt:true},{f:'fiches/hoymiles-hms-1000.pdf',lab:'micro-onduleur Hoymiles HMS-1000',nobatt:true}];
+/* contrôle de la présence des fiches techniques sur le site (affiché dans la liste de contrôle) */
+async function checkFiches(){const ul=$('rChecks');if(!ul)return;let li=$('rFiches');if(!li){li=document.createElement('li');li.id='rFiches';ul.appendChild(li);}else ul.appendChild(li);
+  const set=(k,txt)=>{li.className='rc '+k;li.innerHTML=`<span class="rci">${k==='ok'?'✓':k==='bad'?'!':'•'}</span><span>${txt}</span>`;};
+  if(location.protocol==='file:'){set('warn','Fiches techniques : disponibles seulement sur la version en ligne du site');return;}
+  set('warn','Fiches techniques : vérification…');const batt=compute().nom>0,need=FICHES.filter(x=>!(x.batt&&!batt)&&!(x.nobatt&&batt)),miss=[];
+  for(const x of need){try{const r=await fetch(x.f,{method:'HEAD',cache:'no-store'});const ty=(r.headers.get('content-type')||'');if(!r.ok||ty.includes('text/html'))miss.push(x.f);}catch(e){miss.push(x.f);}}
+  if(!miss.length)set('ok',`Fiches techniques jointes au PDF : ${need.map(x=>x.lab).join(', ')}`);
+  else set('bad',`Fiche${miss.length>1?'s':''} technique${miss.length>1?'s':''} introuvable${miss.length>1?'s':''} sur le site : ${miss.map(m=>`<code>${m}</code>`).join(', ')}. Vérifiez dans GitHub le dossier et le nom exact des fichiers.`);}
 async function loadFiches(){const batt=compute().nom>0,out=[];if(location.protocol==='file:')return out;
-  for(const x of FICHES){if(x.batt&&!batt)continue;if(x.nobatt&&batt)continue;try{const r=await fetch(x.f,{cache:'no-store'});if(!r.ok)continue;const b=await r.arrayBuffer();if(b.byteLength>1000)out.push({lab:x.lab,buf:b});}catch(e){}}return out;}
+  for(const x of FICHES){if(x.batt&&!batt)continue;if(x.nobatt&&batt)continue;try{const r=await fetch(x.f,{cache:'no-store'});if(!r.ok||(r.headers.get('content-type')||'').includes('text/html'))continue;const b=await r.arrayBuffer();const h=new Uint8Array(b.slice(0,5));if(b.byteLength>1000&&String.fromCharCode(...h).startsWith('%PDF'))out.push({lab:x.lab,buf:b});}catch(e){}}return out;}
 const LOADED={};function loadScript(src){return new Promise((ok,ko)=>{if(LOADED[src])return ok();const done=()=>{LOADED[src]=1;ok();};const s=document.createElement('script');s.src=src;s.onload=done;s.onerror=()=>ko(new Error('script'));document.head.appendChild(s);});}
 /* les graphiques SVG sont rendus comme des images : on y recopie les styles calculés (sinon ils perdent tailles, couleurs et polices) */
 const GF_SVG='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=block';let svgFontCache=null;
