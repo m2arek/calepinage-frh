@@ -2872,6 +2872,8 @@ async function checkFiches(){const ul=$('rChecks');if(!ul)return;let li=$('rFich
   else set('bad',`Fiche${miss.length>1?'s':''} technique${miss.length>1?'s':''} introuvable${miss.length>1?'s':''} sur le site : ${miss.map(m=>`<code>${m}</code>`).join(', ')}. Vérifiez dans GitHub le dossier et le nom exact des fichiers.`);}
 async function loadFiches(){const batt=compute().nom>0,out=[];if(location.protocol==='file:')return out;
   for(const x of FICHES){if(x.batt&&!batt)continue;if(x.nobatt&&batt)continue;try{const r=await fetch(x.f,{cache:'no-store'});if(!r.ok||(r.headers.get('content-type')||'').includes('text/html'))continue;const b=await r.arrayBuffer();const h=new Uint8Array(b.slice(0,5));if(b.byteLength>1000&&String.fromCharCode(...h).startsWith('%PDF'))out.push({lab:x.lab,buf:b});}catch(e){}}return out;}
+/* charge une bibliothèque depuis plusieurs serveurs, jusqu'à ce que l'un réponde */
+async function loadAny(urls,ready){for(const u of urls){if(ready())return;try{await loadScript(u);}catch(e){console.warn('script indisponible',u);}if(ready())return;}if(!ready())throw new Error('bibliothèque indisponible');}
 const LOADED={};function loadScript(src){return new Promise((ok,ko)=>{if(LOADED[src])return ok();const done=()=>{LOADED[src]=1;ok();};const s=document.createElement('script');s.src=src;s.onload=done;s.onerror=()=>ko(new Error('script'));document.head.appendChild(s);});}
 /* les graphiques SVG sont rendus comme des images : on y recopie les styles calculés (sinon ils perdent tailles, couleurs et polices) */
 const GF_SVG='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=block';let svgFontCache=null;
@@ -2908,11 +2910,11 @@ async function makePdf(btn){if(pdfBusy)return;pdfBusy=true;const lab=btn?btn.tex
       const cv=await fr.contentWindow.html2canvas(pages[i],{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false,windowWidth:820});
       if(i)pdf.addPage();pdf.addImage(cv.toDataURL('image/jpeg',0.9),'JPEG',0,0,210,297,undefined,'FAST');}
     pdf.setProperties({title:name.replace(/\.pdf$/,''),author:agenceOf(S.terr).nom,subject:'Étude photovoltaïque'});
-    let blob=pdf.output('blob');
-    if(fiches.length){try{setLab('Ajout des fiches techniques…');await loadScript(LIBS.pdflib);const {PDFDocument}=window.PDFLib;const doc2=await PDFDocument.load(pdf.output('arraybuffer'));
+    let blob=pdf.output('blob'),nFiches=0,ficheErr='';
+    if(fiches.length){try{setLab('Ajout des fiches techniques…');await loadAny([LIBS.pdflib,'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js','https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js'],()=>window.PDFLib&&window.PDFLib.PDFDocument);const {PDFDocument}=window.PDFLib;const doc2=await PDFDocument.load(pdf.output('arraybuffer'));
       for(const fi of fiches){try{const src=await PDFDocument.load(fi.buf,{ignoreEncryption:true});const pgs=await doc2.copyPages(src,src.getPageIndices());pgs.forEach(p=>doc2.addPage(p));}catch(e){console.warn('fiche',fi.lab,e);}}
-      blob=new Blob([await doc2.save()],{type:'application/pdf'});}catch(e){console.warn(e);toast('Fiches techniques non ajoutées');}}
-    const url=URL.createObjectURL(blob);const lk=document.createElement('a');lk.href=url;lk.download=name;lk.rel='noopener';document.body.appendChild(lk);lk.click();lk.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);fr.remove();toast('Rapport téléchargé : '+name);$('rFile').textContent='Dernier rapport : '+name+' (dossier Téléchargements)';}
+      blob=new Blob([await doc2.save()],{type:'application/pdf'});nFiches=fiches.length;}catch(e){console.warn(e);ficheErr=String(e&&e.message||e);}}
+    const url=URL.createObjectURL(blob);const lk=document.createElement('a');lk.href=url;lk.download=name;lk.rel='noopener';document.body.appendChild(lk);lk.click();lk.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);fr.remove();toast('Rapport téléchargé : '+name);$('rFile').innerHTML='Dernier rapport : '+esc(name)+' (dossier Téléchargements)'+(fiches.length?(nFiches?` · ${nFiches} fiche${nFiches>1?'s':''} technique${nFiches>1?'s':''} jointe${nFiches>1?'s':''}`:` · <span class="warnline">fiches techniques non jointes (${esc(ficheErr||'erreur')})</span>`):'');}
   catch(e){console.error(e);toast('Création du PDF impossible (connexion internet requise la première fois).');}
   finally{pdfBusy=false;setLab(lab);}}
 $('rGo').addEventListener('click',()=>makePdf($('rGo')));
